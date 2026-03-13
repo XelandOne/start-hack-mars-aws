@@ -108,16 +108,6 @@ Kiro is an AI-powered IDE that can write code, run commands, read files, and hel
 
 Once you've created your project (see Step 3), open the project folder in Kiro via **File → Open Folder**.
 
-### Enable Strands SDK and Amplify Powers
-
-Kiro has built-in "Powers" that give the AI deeper knowledge of specific frameworks. Enable these two for the hackathon:
-
-1. Open the **Powers** panel in Kiro (click the Powers icon in the sidebar or use the Command Palette: `Ctrl+Shift+P` / `Cmd+Shift+P` → search "Powers")
-2. Enable **Strands SDK** — gives Kiro knowledge of the Strands Agents SDK for building AI agents
-3. Enable **Amplify** — gives Kiro knowledge of AWS Amplify Gen2 patterns, schema syntax, and best practices
-
-> ⚠️ Make sure both powers show as **enabled** before you start prompting Kiro. This significantly improves the quality of generated code for Amplify and Strands.
-
 ### Useful Kiro features
 
 | Feature | How |
@@ -201,41 +191,7 @@ Once configured, restart Kiro IDE (or reload the window). You can then ask Kiro 
 - *"What are the optimal soil conditions for Mars tomatoes?"*
 - *"Query the knowledge base for water requirements per growth stage"*
 
-Kiro will automatically use the MCP tools to fetch data from the Knowledge Base and incorporate it into your app.
-
----
-
-## 📐 Step 5 — Define Your Backend (Data Model)
-
-Edit `amplify/data/resource.ts` to define your API. Here's a minimal starting point:
-
-```typescript
-import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
-
-const schema = a.schema({
-  CropLog: a
-    .model({
-      plantId: a.string().required(),
-      temperature: a.float(),
-      humidity: a.float(),
-      waterLevel: a.float(),
-      notes: a.string(),
-      timestamp: a.datetime(),
-    })
-    .authorization((allow) => [allow.publicApiKey()]),
-});
-
-export type Schema = ClientSchema<typeof schema>;
-export const data = defineData({
-  schema,
-  authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
-    apiKeyAuthorizationMode: {
-      expiresInDays: 7,
-    },
-  },
-});
-```
+Kiro will automatically use the MCP tools to fetch data from the Knowledge Base and incorporate it into your app
 
 After saving, `npx ampx sandbox` (running in Terminal 1) will automatically pick up changes and deploy them.
 
@@ -247,47 +203,33 @@ Not sure how to set up the technical pieces? Use these prompts in Kiro's chat to
 
 ### 🗄️ Database & Data Modeling
 
-> *"Define a DynamoDB-backed data model in Amplify Gen2 with three related models in `amplify/data/resource.ts`. Include different field types (string, float, datetime) and a one-to-many relationship."*
-
-> *"Add a many-to-many relationship between two of my existing models in the Amplify Gen2 data schema."*
+> *"Define a DynamoDB table with the following keys:[list of keys and value type]"*
 
 ### 🔐 Authentication & Authorization
 
-> *"Set up Amplify Auth with email-based sign-up and login in my project."*
-
-> *"Add owner-based authorization to my data models so users can only access their own records."*
-
-> *"Change the authorization on [model name] so it's publicly readable but only authenticated users can create or update records."*
+> *"Set up Cognito Auth with email-based sign-up and login in my project."*
 
 ### ⚡ Serverless Functions (Lambda)
 
-> *"Create a Lambda function in Amplify Gen2 and expose it as a custom mutation in my GraphQL schema."*
+> *"Create a Lambda function in Amplify Gen2 that [the purpose of your function goes here]."*
 
 > *"Add a scheduled Lambda function in Amplify Gen2 that runs every 15 minutes."*
 
-> *"Wire a Lambda function as a resolver for a custom query in my Amplify data schema."*
+> *"Fix the error in my lambda function. you can query the cloudwatch logs to find out about the error"*
 
 ### 🌐 API Layer
 
-> *"Add a custom query and a custom mutation to my Amplify Gen2 GraphQL schema backed by Lambda resolvers."*
-
-> *"Generate a REST API endpoint in my Amplify project that triggers a Lambda function."*
+> *"Generate a REST API endpoint in my project that triggers a Lambda function."*
 
 ### 📁 Storage (S3)
 
-> *"Add an S3 storage bucket to my Amplify Gen2 project with per-user file scoping."*
+> *"Add an S3 storage bucket to my project called [your name], add some random string to the name such that I'm sure the name is unique"*
 
-> *"Create a React component that uploads files to my Amplify S3 bucket and lists the uploaded files."*
+> *"Create a React component that uploads files to my bucket and lists the uploaded files."*
 
 ### 🔄 Real-Time & Subscriptions
 
-> *"Enable real-time subscriptions on my Amplify Gen2 data models so the frontend updates automatically when data changes."*
-
-### 🎨 Frontend Integration
-
-> *"Configure the Amplify client library in my React app and connect it to my Gen2 backend."*
-
-> *"Add the Amplify Authenticator UI component to wrap my app with a login/signup flow."*
+> *"Enable real-time subscriptions on my DynameDB so the frontend updates automatically when data changes."*
 
 ### 🌱 Using the Knowledge Base (MCP)
 
@@ -299,7 +241,6 @@ Not sure how to set up the technical pieces? Use these prompts in Kiro's chat to
 
 > *"I'm getting this error when running `npx ampx sandbox`: [paste error]. Fix it."*
 
-> *"Review my Amplify Gen2 authorization rules and suggest improvements for my use case."*
 
 > 💡 **Pro tip:** After each prompt, review what Kiro generates, test it, and then build on top of it with the next prompt. Iterating in small steps is the fastest way to make progress!
 

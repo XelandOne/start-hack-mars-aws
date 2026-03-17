@@ -236,6 +236,21 @@ Kiro will automatically call the MCP tool, retrieve relevant data from the knowl
 
 ---
 
+## 🤖 Step 5 — Deploy Your Agentic Application on Amazon Bedrock AgentCore
+
+If you're building an AI agent (e.g., an autonomous greenhouse manager), consider deploying it on **Amazon Bedrock AgentCore**. AgentCore provides infrastructure for hosting, scaling, and operating AI agents with built-in support for tool use, memory, and orchestration.
+
+> 💡 **Tip:** Ask Kiro to help you set up an AgentCore deployment. Enable the **AgentCore Power** in Kiro's Powers panel for framework-aware code generation.
+
+### Reference Repositories
+
+These repos contain working examples you can use as a starting point:
+
+- [Amazon Bedrock AgentCore Samples](https://github.com/awslabs/amazon-bedrock-agentcore-samples) — Sample agents and patterns for AgentCore
+- [Full-Stack Solution Template for AgentCore](https://github.com/awslabs/fullstack-solution-template-for-agentcore) — End-to-end template with frontend and AgentCore backend
+
+---
+
 ## 💬 Suggested Kiro Prompts — Building Your Architecture
 
 Not sure how to set up the technical pieces? Use these prompts in Kiro's chat to scaffold your AWS infrastructure. Copy-paste them or adapt them to your needs!

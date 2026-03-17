@@ -1,6 +1,8 @@
 # 🍅 Mars Tomato Hackathon — Getting Started Guide
 
-Welcome, hackers! Your mission: build an application that helps manage a **tomato plantation on Mars**. You'll use AWS cloud services as your backend, an AI-powered Knowledge Base (via MCP) to get crop data, and Kiro as your AI coding assistant.
+Welcome, hackers! Your mission: build an application that helps manage a **tomato plantation on Mars**. You'll use AWS cloud services, an AI-powered Knowledge Base (via MCP) to get crop data, and Kiro as your AI coding assistant.
+
+> 💡 **Tip:** AWS Amplify Gen2 is an easy way to get a frontend deployed quickly. If you need other AWS services that Amplify supports (Authentication, Data/GraphQL API, Storage, Functions), feel free to use those too. For anything else, you can use the AWS SDK, CDK, or Console directly — it's up to your team.
 
 ---
 
@@ -124,7 +126,7 @@ Kiro has built-in "Powers" that give the AI deeper knowledge of specific framewo
 
 1. Open the **Powers** panel in Kiro (click the Powers icon in the sidebar or use the Command Palette: `Ctrl+Shift+P` / `Cmd+Shift+P` → search "Powers")
 2. Enable **Strands SDK** — gives Kiro knowledge of the Strands Agents SDK for building AI agents
-3. Enable **Amplify** — gives Kiro knowledge of AWS Amplify Gen2 patterns, schema syntax, and best practices
+2. Enable **Amplify** — gives Kiro knowledge of AWS Amplify Gen2 patterns, schema syntax, and best practices
 
 > ⚠️ Make sure both powers show as **enabled** before you start prompting Kiro. This significantly improves the quality of generated code for Amplify and Strands.
 
@@ -141,10 +143,11 @@ Kiro has built-in "Powers" that give the AI deeper knowledge of specific framewo
 
 ---
 
-## 🚀 Step 3 — Create Your Project with AWS Amplify Gen2
+## 🚀 Step 3 — Create Your Project
 
 ### You can follow the manual instructions here below, or skip to the suggested Kiro prompts session and ask Kiro to set it up for you!
-Amplify Gen2 lets you build a full-stack app (frontend + backend) and deploy it to AWS with minimal configuration.
+
+AWS Amplify Gen2 is an easy way to get a React frontend deployed quickly. If Amplify supports other services you need (auth, data, storage, functions), you can use those too. Otherwise, provision backend resources however your team prefers — AWS Console, CDK, SDK, etc.
 
 ### Create a new Amplify project
 
@@ -165,56 +168,71 @@ npm install
 
 ```
 mars-tomato-app/
-├── amplify/           # ← Your backend lives here
+├── amplify/           # ← Backend definitions (if using Amplify for backend services)
 │   ├── auth/          #   Authentication setup
 │   ├── data/          #   Database / API schema
 │   └── backend.ts     #   Backend entry point
-├── src/               # ← Your frontend lives here
+├── src/               # ← Your frontend lives here (React)
 ├── package.json
 └── ...
 ```
 
-### Start the local dev environment
+### Start the dev environment
 
-Open **two terminals**:
-
-**Terminal 1 — Backend sandbox:**
-```bash
-npx ampx sandbox
-```
-This deploys a personal cloud sandbox of your backend to AWS. Keep it running.
-
-**Terminal 2 — Frontend dev server:**
 ```bash
 npm run dev
 ```
 
-Your app is now running locally and connected to real AWS services!
+If you're using Amplify for backend services, run the sandbox in a separate terminal:
+```bash
+npx ampx sandbox
+```
 
 ---
 
 ## 🌱 Step 4 — Connect to the Mars Crop Knowledge Base (MCP)
 
-The organizers provide an **MCP server** that gives you access to crop data for your Mars tomato plantation (soil conditions, growth cycles, water needs, etc.).
+The organizers provide an **MCP server** that gives you access to a knowledge base about Martian greenhouse agriculture — crop profiles, environmental constraints, nutrient management, operational scenarios, and more.
 
-### Configure the MCP server in Kiro
+**MCP Endpoint URL:**
+```
+https://kb-start-hack-gateway-buyjtibfpg.gateway.bedrock-agentcore.us-east-2.amazonaws.com/mcp
+```
 
-The MCP configuration file is already included in this repository at `.kiro/settings/mcp.json`. No manual setup needed!
+### Configure the MCP server using Kiro
 
-When you open this project folder in Kiro IDE, it will automatically detect and load the MCP server configuration.
+The easiest way to set this up is to ask Kiro to do it for you. In Kiro's chat, try:
 
-> 💡 If you create a new project from scratch (e.g., with `npm create amplify`), copy the `.kiro` folder from this repository into your new project root.
+> *"Configure an MCP server using streamable HTTP at this URL: https://kb-start-hack-gateway-buyjtibfpg.gateway.bedrock-agentcore.us-east-2.amazonaws.com/mcp"*
+
+Kiro will create the `.kiro/settings/mcp.json` file for you. If you prefer to do it manually, create that file with:
+
+```json
+{
+  "mcpServers": {
+    "mars-crop-knowledge-base": {
+      "type": "streamableHttp",
+      "url": "https://kb-start-hack-gateway-buyjtibfpg.gateway.bedrock-agentcore.us-east-2.amazonaws.com/mcp",
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+After configuring, reload Kiro (`Cmd+Shift+P` / `Ctrl+Shift+P` → `Developer: Reload Window`).
 
 ### Using the Knowledge Base
 
-Once configured, restart Kiro IDE (or reload the window). You can then ask Kiro questions like:
+Once the MCP server is connected, you can ask Kiro to query it. Here are some examples:
 
-- *"What are the optimal soil conditions for Mars tomatoes?"*
-- *"Query the knowledge base for water requirements per growth stage"*
+- *"What are the optimal temperature and humidity ranges for growing lettuce on Mars?"*
+- *"Query the knowledge base for water requirements per crop growth stage"*
+- *"What crops are best suited for a 450-day Mars mission and why?"*
+- *"What happens if the water recycling system fails in the greenhouse? What should the AI do?"*
+- *"Use the knowledge base to build a data model for tracking crop health in my app"*
 
-Kiro will automatically use the MCP tools to fetch data from the Knowledge Base and incorporate it into your app
-
-After saving, `npx ampx sandbox` (running in Terminal 1) will automatically pick up changes and deploy them.
+Kiro will automatically call the MCP tool, retrieve relevant data from the knowledge base, and use it in its responses or code generation.
 
 ---
 
@@ -224,43 +242,45 @@ Not sure how to set up the technical pieces? Use these prompts in Kiro's chat to
 
 ### 🗄️ Database & Data Modeling
 
-> *"Define a DynamoDB table with the following keys:[list of keys and value type]"*
+> *"Create a DynamoDB table using AWS CDK with the following keys: [list of keys and value type]"*
 
-### 🔐 Authentication & Authorization
+> *"Write a utility module that uses the AWS SDK to read and write to my DynamoDB table."*
+
+### �️ Database & Data Modeling
+
+> *"Define a DynamoDB table with the following keys: [list of keys and value type]"*
+
+> *"Write a utility module that reads and writes to my DynamoDB table."*
+
+### �🔐 Authentication & Authorization
 
 > *"Set up Cognito Auth with email-based sign-up and login in my project."*
 
 ### ⚡ Serverless Functions (Lambda)
 
-> *"Create a Lambda function in Amplify Gen2 that [the purpose of your function goes here]."*
+> *"Create a Lambda function that [the purpose of your function goes here]."*
 
-> *"Add a scheduled Lambda function in Amplify Gen2 that runs every 15 minutes."*
+> *"Add a scheduled Lambda function that runs every 15 minutes."*
 
-> *"Fix the error in my lambda function. you can query the cloudwatch logs to find out about the error"*
+> *"Fix the error in my Lambda function. You can query the CloudWatch logs to find out about the error."*
 
 ### 🌐 API Layer
 
-> *"Generate a REST API endpoint in my project that triggers a Lambda function."*
+> *"Generate a REST API endpoint that triggers a Lambda function."*
 
 ### 📁 Storage (S3)
 
-> *"Add an S3 storage bucket to my project called [your name], add some random string to the name such that I'm sure the name is unique"*
+> *"Add an S3 bucket called [your name], add some random string to the name such that I'm sure the name is unique."*
 
-> *"Create a React component that uploads files to my bucket and lists the uploaded files."*
+> *"Create a React component that uploads files to my S3 bucket and lists the uploaded files."*
 
 ### 🔄 Real-Time & Subscriptions
 
-> *"Enable real-time subscriptions on my DynameDB so the frontend updates automatically when data changes."*
-
-### 🌱 Using the Knowledge Base (MCP)
-
-> *"List all the tools available from the Mars crop knowledge base MCP server and describe what each one does."*
-
-> *"Query the knowledge base and return the available crop data."*
+> *"Enable real-time subscriptions so the frontend updates automatically when data changes."*
 
 ### 🐛 Debugging & Help
 
-> *"I'm getting this error when running `npx ampx sandbox`: [paste error]. Fix it."*
+> *"I'm getting this error when running my AWS CDK deployment: [paste error]. Fix it."*
 
 
 > 💡 **Pro tip:** After each prompt, review what Kiro generates, test it, and then build on top of it with the next prompt. Iterating in small steps is the fastest way to make progress!
@@ -268,23 +288,22 @@ Not sure how to set up the technical pieces? Use these prompts in Kiro's chat to
 ---
 
 ## 🧪 Quick Sanity Check
-
+> *"I'm getting this error: [paste error]. Fix it."*
 By this point you should have:
 
 - [x] AWS credentials from Workshop Studio configured and `aws sts get-caller-identity` works
 - [x] Kiro IDE installed, authenticated, and project opened
-- [x] Amplify project created and `npx ampx sandbox` running
-- [x] Frontend dev server running (`npm run dev`)
+- [x] Amplify frontend project created and `npm run dev` running
+- [x] Backend services provisioned via AWS Console or CDK
 - [x] MCP server configured for the Mars Crop Knowledge Base
 
 ---
 
 ## 💡 Tips for Success
 
-1. **Ask Kiro first.** Don't know how to do something in AWS? Ask Kiro. It can explain concepts, write code, and run commands.
-2. **Use the Planner.** Press `Shift + Tab` in Kiro's chat to break down your idea into steps before coding.
+- [x] Project created and `npm run dev` runningt to break down your idea into steps before coding.
 3. **Start simple.** Get a basic CRUD app working first, then add features.
-4. **Check the Amplify docs.** [https://docs.amplify.aws/gen2/](https://docs.amplify.aws/gen2/)
+4. **Check the Amplify docs for frontend/hosting.** [https://docs.amplify.aws/gen2/](https://docs.amplify.aws/gen2/)
 5. **Use the Knowledge Base.** The crop data from the MCP server is there to make your solution realistic — use it!
 6. **Commit often.** Use `git init && git add -A && git commit -m "initial"` early, then commit after each working feature.
 
@@ -293,9 +312,9 @@ By this point you should have:
 ## 🆘 Troubleshooting
 
 | Problem | Solution |
-|---|---|
+4. **Check the Amplify docs.** [https://docs.amplify.aws/gen2/](https://docs.amplify.aws/gen2/)
 | `aws configure` — command not found | AWS CLI not installed. See Prerequisites. |
-| `npx ampx sandbox` fails | Make sure `aws sts get-caller-identity` works first. Your Workshop Studio credentials may have expired — copy fresh ones. |
+| Backend service creation fails | Make sure `aws sts get-caller-identity` works first. Your Workshop Studio credentials may have expired — copy fresh ones. |
 | Kiro doesn't see MCP tools | Restart Kiro IDE (or reload window) after editing `.kiro/settings/mcp.json`. |
 | `npm create amplify` fails | Make sure Node.js v18+ is installed: `node --version`. |
 | Port already in use | Another process is using the port. Kill it or change the port in your dev config. |
@@ -304,7 +323,7 @@ By this point you should have:
 ---
 
 ## 📚 Useful Links
-
+| `npx ampx sandbox` or AWS calls fail | Make sure `aws sts get-caller-identity` works first. Your Workshop Studio credentials may have expired — copy fresh ones. |
 - [AWS Amplify Gen2 Docs](https://docs.amplify.aws/gen2/)
 - [Kiro IDE Downloads](https://kiro.dev/downloads)
 - [AWS Free Tier Info](https://aws.amazon.com/free/)

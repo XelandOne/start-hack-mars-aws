@@ -1,12 +1,12 @@
 # Project Structure
 
-This repo is currently a starter/template. Once the Amplify project is scaffolded, the expected structure is:
+This repo is currently a starter/template. Once the project is scaffolded, a typical structure looks like:
 
 ```
 mars-tomato-app/
-├── amplify/              # Backend definitions (deployed to AWS)
-│   ├── auth/             # Cognito authentication config
-│   ├── data/             # DynamoDB / API schema definitions
+├── amplify/              # Backend definitions (if using Amplify for backend services)
+│   ├── auth/             # Authentication setup
+│   ├── data/             # Database / API schema
 │   └── backend.ts        # Backend entry point
 ├── src/                  # Frontend application code (React)
 ├── .kiro/
@@ -19,7 +19,6 @@ mars-tomato-app/
 ```
 
 ## Conventions
-- Backend logic goes in `amplify/` — Lambda functions, data models, auth config.
 - Frontend code goes in `src/`.
-- Keep Amplify resource definitions (auth, data, functions, storage) in their own subdirectories under `amplify/`.
+- Backend approach is up to the team — Amplify, CDK, SDK, Console, etc.
 - The MCP Knowledge Base is read-only reference data — don't try to write to it.

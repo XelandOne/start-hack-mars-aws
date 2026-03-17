@@ -1,23 +1,19 @@
 # Tech Stack
 
 ## Core
-- **Framework**: AWS Amplify Gen2 (full-stack: frontend + backend)
 - **Runtime**: Node.js v18+
 - **Package Manager**: npm
 - **Language**: TypeScript / JavaScript
 - **Cloud Provider**: AWS (sandbox account via Workshop Studio)
 
-## Backend (lives in `amplify/`)
-- **Auth**: Amazon Cognito (email-based sign-up/login)
-- **Database**: Amazon DynamoDB
-- **API**: REST or GraphQL via Amplify
-- **Functions**: AWS Lambda (serverless)
-- **Storage**: Amazon S3
-- **Data Source**: Mars Crop Knowledge Base via MCP server
+## Frontend
+- React
+- AWS Amplify Gen2 is an easy way to deploy the frontend. If Amplify supports other services the team needs (auth, data, storage, functions), those can be used too.
 
-## Frontend (lives in `src/`)
-- React (default Amplify Gen2 scaffold)
-- Amplify UI components and client libraries
+## Backend
+- Teams are free to choose their own backend approach (Amplify backend, AWS CDK, AWS SDK, Console, etc.)
+- Common AWS services: DynamoDB, Lambda, Cognito, S3, API Gateway
+- Data Source: Mars Crop Knowledge Base via MCP server
 
 ## Common Commands
 
@@ -25,20 +21,19 @@
 # Install dependencies
 npm install
 
-# Start backend sandbox (deploys personal cloud sandbox to AWS)
-npx ampx sandbox
-
 # Start frontend dev server
 npm run dev
+
+# Start Amplify backend sandbox (if using Amplify for backend)
+npx ampx sandbox
 
 # Verify AWS credentials
 aws sts get-caller-identity
 
-# Create a new Amplify project from scratch
+# Create a new Amplify project
 npm create amplify@latest <project-name>
 ```
 
 ## Notes
 - AWS credentials are temporary (Workshop Studio). Re-copy them if you get auth errors.
-- `npx ampx sandbox` must be running in a separate terminal for backend changes to deploy.
 - The MCP config should live at `.kiro/settings/mcp.json` for the Mars Crop Knowledge Base.

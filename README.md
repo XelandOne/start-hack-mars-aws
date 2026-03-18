@@ -64,7 +64,7 @@ Each team has **one shared AWS sandbox account** provisioned through AWS Worksho
 
 ### Get CLI Credentials
 
-To use AWS from your terminal (needed for Amplify), you need to copy the temporary credentials:
+To use AWS from your terminal (needed for Amplify and for the AWS CLI), you need to copy the temporary credentials:
 
 1. In Workshop Studio, look for the **"Get AWS CLI credentials"** section (or click on your account details)
 2. You'll see three values: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN`

@@ -251,6 +251,26 @@ These repos contain working examples you can use as a starting point:
 
 ---
 
+## 🧬 Step 6 — Build AI Agents with Strands SDK (Optional)
+
+If you want to build AI agents for your application (e.g., a crop advisor, an autonomous greenhouse controller), the **Strands Agents SDK** is a good option. It's an open-source Python SDK for building agents that can use tools, call LLMs, and orchestrate multi-step reasoning.
+
+You're not required to use it — any agent framework works — but Strands integrates well with AWS Bedrock models and Kiro has built-in support for it via the **Strands SDK Power**.
+
+### Getting Started with Strands
+
+```bash
+pip install strands-agents strands-agents-tools
+```
+
+> 💡 **Tip:** Enable the **Strands SDK Power** in Kiro's Powers panel, then ask Kiro to help you build an agent. For example:
+>
+> *"Create a Strands agent that queries the Mars crop knowledge base and recommends optimal growing conditions"*
+>
+> *"Build a multi-tool agent with Strands that monitors sensor data and adjusts greenhouse parameters"*
+
+---
+
 ## 💬 Suggested Kiro Prompts — Building Your Architecture
 
 Not sure how to set up the technical pieces? Use these prompts in Kiro's chat to scaffold your AWS infrastructure. Copy-paste them or adapt them to your needs!
@@ -343,6 +363,8 @@ By this point you should have:
 - [Kiro IDE Downloads](https://kiro.dev/downloads)
 - [AWS Free Tier Info](https://aws.amazon.com/free/)
 - [Node.js Downloads](https://nodejs.org)
+- [Strands Agents SDK (GitHub)](https://github.com/strands-agents/sdk-python)
+- [Strands Agents Documentation](https://strandsagents.com)
 
 ---
 

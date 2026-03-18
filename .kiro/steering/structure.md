@@ -1,9 +1,9 @@
 # Project Structure
 
-This repo is currently a starter/template. Once the project is scaffolded, a typical structure looks like:
+This repo is a starter/template. Once the project is scaffolded, a typical structure looks like:
 
 ```
-mars-tomato-app/
+mars-agriculture-app/
 ├── amplify/              # Backend definitions (if using Amplify for backend services)
 │   ├── auth/             # Authentication setup
 │   ├── data/             # Database / API schema
@@ -14,11 +14,11 @@ mars-tomato-app/
 │   │   └── mcp.json      # MCP server config (Mars Crop Knowledge Base)
 │   └── steering/         # Steering rules for AI assistant
 ├── package.json
-├── HACKATHON_README.md   # Hackathon getting-started guide
 └── README.md
 ```
 
 ## Conventions
 - Frontend code goes in `src/`.
 - Backend approach is up to the team — Amplify, CDK, SDK, Console, etc.
+- AI agent code (if using Strands SDK or similar) can live in its own directory (e.g., `agents/`).
 - The MCP Knowledge Base is read-only reference data — don't try to write to it.

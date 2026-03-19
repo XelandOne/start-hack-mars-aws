@@ -475,7 +475,7 @@ export default function MissionSim() {
           {/* Area size slider */}
           <div className="alloc-area-row">
             <span className="alloc-area-label">Total Area</span>
-            <input type="range" min={2} max={300} step={1} value={Math.min(areaM2, 300)}
+            <input type="range" min={2} max={600} step={1} value={Math.min(areaM2, 600)}
               onChange={e => { setAreaM2(+e.target.value); setSim(null) }} />
             <input
               type="number" min={2} max={99999} step={1}

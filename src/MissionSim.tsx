@@ -439,6 +439,51 @@ function PlanetVisual({ planetKey }: { planetKey: string }) {
   )
 }
 
+function computeRecommendedM2(areaM2: number, yieldMod: number): Record<CropKey, number> {
+  const kcalPerM2: Record<CropKey, number> = {
+    potato:  (6000/100*77)  / 95  * yieldMod,
+    beans:   (3000/100*100) / 60  * yieldMod,
+    lettuce: (4000/100*15)  / 37  * yieldMod,
+    radish:  (3000/100*16)  / 25  * yieldMod,
+    herbs:   (1000/100*40)  / 30  * yieldMod,
+  }
+  const proteinPerM2: Record<CropKey, number> = {
+    potato:  (6000/100*2)   / 95  * yieldMod,
+    beans:   (3000/100*7)   / 60  * yieldMod,
+    lettuce: (4000/100*1.4) / 37  * yieldMod,
+    radish:  (3000/100*0.7) / 25  * yieldMod,
+    herbs:   (1000/100*2)   / 30  * yieldMod,
+  }
+  const kcalTarget = CREW * 3000
+  const proteinTarget = CREW * 56
+  const minProtein = CREW * 30
+  const maxKcal = areaM2 * kcalPerM2.potato
+  if (maxKcal < kcalTarget) {
+    const beansM2 = Math.round(areaM2 * 0.15)
+    return { potato: areaM2 - beansM2, beans: beansM2, lettuce: 0, radish: 0, herbs: 0 }
+  }
+  const potatoForKcal = Math.ceil(kcalTarget / kcalPerM2.potato)
+  const surplus = areaM2 - potatoForKcal
+  const proteinFromPotato = (m2: number) => m2 * proteinPerM2.potato
+  const beansForFullProtein = Math.max(0, Math.ceil((proteinTarget - proteinFromPotato(potatoForKcal)) / proteinPerM2.beans))
+  const beansForMinProtein  = Math.max(0, Math.ceil((minProtein  - proteinFromPotato(potatoForKcal)) / proteinPerM2.beans))
+  if (surplus <= 0 || surplus < beansForMinProtein) {
+    const beansM2 = Math.min(Math.round(areaM2 * 0.12), beansForMinProtein)
+    return { potato: areaM2 - beansM2, beans: beansM2, lettuce: 0, radish: 0, herbs: 0 }
+  }
+  if (surplus < beansForFullProtein + Math.round(areaM2 * 0.15)) {
+    const beansM2 = Math.min(surplus, beansForFullProtein)
+    return { potato: areaM2 - beansM2, beans: beansM2, lettuce: 0, radish: 0, herbs: 0 }
+  }
+  const minBeansM2 = Math.max(beansForFullProtein, Math.round(areaM2 * 0.12))
+  const beansM2 = Math.min(minBeansM2, surplus)
+  const remainingAfterBeans = surplus - beansM2
+  const lettuceM2 = Math.round(remainingAfterBeans * 0.50)
+  const radishM2  = Math.round(remainingAfterBeans * 0.30)
+  const herbsM2   = remainingAfterBeans - lettuceM2 - radishM2
+  return { potato: potatoForKcal, beans: beansM2, lettuce: lettuceM2, radish: radishM2, herbs: herbsM2 }
+}
+
 export default function MissionSim() {
   const [planets, setPlanets] = useState<Record<string, PlanetConfig>>(DEFAULT_PLANETS)
   const [planetKey, setPlanetKey] = useState("mars")
@@ -460,6 +505,13 @@ export default function MissionSim() {
   const [allocLoading, setAllocLoading] = useState(false)
   const [allocError, setAllocError] = useState<string | null>(null)
   const [allocReasoning, setAllocReasoning] = useState<string | null>(null)
+  const [recommendedM2, setRecommendedM2] = useState<Record<CropKey, number> | null>(null)
+
+
+  // Recompute recommended areas whenever area or planet changes
+  useEffect(() => {
+    setRecommendedM2(computeRecommendedM2(areaM2, planets[planetKey]?.yieldMod ?? 0.85))
+  }, [areaM2, planetKey, planets])
 
   async function fetchRecommendedAlloc() {
     setAllocLoading(true)
@@ -741,7 +793,7 @@ export default function MissionSim() {
                 setSim(null)
               }}
             />
-            <span className="alloc-area-unit">m2</span>
+            <span className="alloc-area-unit">m²</span>
           </div>
 
           <div className="alloc-ai-row">
@@ -780,7 +832,14 @@ export default function MissionSim() {
                       title={enabled ? "Disable crop" : "Enable crop"}
                     >{enabled ? "ON" : "OFF"}</button>
                   </div>
-                  <div className="alloc-meta" style={{ color: enabled ? "#444" : "#2a2a2a" }}>{CROPS[k].cycleDays}d cycle &middot; {CROPS[k].yieldKg}kg/m2 &middot; {CROPS[k].kcal} kcal/100g</div>
+                  <div className="alloc-meta" style={{ color: enabled ? "#444" : "#2a2a2a" }}>
+                    {CROPS[k].cycleDays}d cycle &middot; {CROPS[k].yieldKg}kg/m2 &middot; {CROPS[k].kcal} kcal/100g
+                    {recommendedM2 && enabled && (
+                      <span className="alloc-rec-hint" title="Recommended area based on REAP agent knowledge">
+                        &nbsp;· rec: <span style={{ color: CROPS[k].color }}>{recommendedM2[k]} m²</span>
+                      </span>
+                    )}
+                  </div>
                   <input type="range" min={0} max={100} value={alloc[k]} disabled={!enabled}
                     style={{ opacity: enabled ? 1 : 0.25 }}
                     onChange={e => { setAlloc(a => ({ ...a, [k]: +e.target.value })); setSim(null) }} />
@@ -930,9 +989,6 @@ export default function MissionSim() {
                         <span className="mc-dash-crop-name">{CROPS[k].emoji} {CROPS[k].label}</span>
                         <span className="mc-dash-harvest-badge" style={{ background: CROPS[k].color + "22", color: CROPS[k].color, borderColor: CROPS[k].color + "55" }}>
                           {nearHarvest} cells ready
-                        </span>
-                        <span className="mc-dash-harvest-kcal" style={{ color: "#555" }}>
-                          ~{Math.round(nearHarvest * (areaM2 / TOTAL_CELLS) * CROPS[k].yieldKg * 10 * CROPS[k].kcal / 100).toLocaleString()} kcal
                         </span>
                       </div>
                     ))}

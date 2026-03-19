@@ -322,6 +322,8 @@ body { background: #080810; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
 .alloc-label { font-size: 0.75rem; color: #ccc; flex: 1; }
 .alloc-val { font-size: 0.72rem; color: #888; }
 .alloc-meta { font-size: 0.62rem; color: #444; margin-bottom: 4px; }
+.alloc-rec-hint { font-size: 0.62rem; color: #555; }
+.alloc-rec-hint span { font-weight: 600; }
 .alloc-item input[type=range] { width: 100%; accent-color: #c0392b; }
 
 /* Mission control grid */
@@ -940,3 +942,13 @@ body { background: #080810; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
 .mbf-todo-content { display: flex; flex-direction: column; gap: 2px; }
 .mbf-todo-action { font-size: 0.78rem; color: #ccc; font-weight: 600; }
 .mbf-todo-detail { font-size: 0.74rem; color: #666; line-height: 1.4; }
+
+/* MODE TOGGLE + RETRO SCRUBBER */
+.mission-ov-mode-toggle { display: flex; gap: 2px; background: #080810; border: 1px solid #1a1a2e; border-radius: 6px; padding: 2px; margin-left: auto; }
+.mode-toggle-btn { background: none; border: none; color: #555; font-size: 0.7rem; padding: 3px 10px; border-radius: 4px; cursor: pointer; transition: all 0.15s; }
+.mode-toggle-btn:hover { color: #aaa; }
+.mode-toggle-btn.active { background: #1a1a2e; color: #ff6b6b; }
+.mission-retro-scrubber { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; padding: 8px 12px; background: #080810; border: 1px solid #1a1a2e; border-radius: 8px; }
+.retro-scrubber-label { font-size: 0.68rem; color: #444; white-space: nowrap; }
+.retro-scrubber-input { flex: 1; accent-color: #c0392b; cursor: pointer; }
+.retro-scrubber-val { font-size: 0.78rem; font-weight: 700; color: #ff6b6b; min-width: 52px; text-align: right; }

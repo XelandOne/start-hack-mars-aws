@@ -478,7 +478,7 @@ export default function MissionSim() {
             <input type="range" min={2} max={600} step={1} value={Math.min(areaM2, 600)}
               onChange={e => { setAreaM2(+e.target.value); setSim(null) }} />
             <input
-              type="number" min={2} max={99999} step={1}
+              type="number" min={2} max={600} step={1}
               className="alloc-area-input"
               value={areaM2}
               onChange={e => {

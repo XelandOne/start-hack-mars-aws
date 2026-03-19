@@ -39,7 +39,12 @@ interface SimState {
   day: number; cells: Cell[]
   totalKcal: number; totalProteinG: number
   waterUsedL: number; waterRecycledL: number
-  events: SimEvent[]; kcalPerDay: number[]
+  pantryKcal: number  // food store — surplus accumulates, drawn down on lean days
+  events: SimEvent[]; kcalPerDay: number[]; proteinPerDay: number[]
+  cumulKcal: number[]  // cumulative total kcal consumed at each day
+  waterEffPerDay: number[] // recycled / (recycled + net used) * 100 per day
+  failRatePerDay: number[] // % of active cells in failed state each day
+  pantryPerDay: number[]   // food store level at end of each day
 }
 
 // alloc = % share per crop (0-100); areaM2 = total greenhouse floor area
@@ -99,14 +104,39 @@ function stepSim(prev: SimState, yieldMod: number, waterRecyclePct: number, stor
   }
 
   const waterRecycled = dayWaterUsed * (waterRecyclePct / 100)
+  const totalWaterUsed = prev.waterUsedL + (dayWaterUsed - waterRecycled)
+  const totalWaterRecycled = prev.waterRecycledL + waterRecycled
+  const dayWaterEff = dayWaterUsed > 0 ? Math.round(waterRecycled / dayWaterUsed * 100) : waterRecyclePct
+  const failedCount = cells.filter(c => c.failed && (day - c.plantedDay) < c.cycleDays).length
+  const dayFailRate = Math.round(failedCount / cells.length * 100)
+
+  // Pantry logic: harvest goes into store, crew consumes to hit overall mission calorie goal.
+  // If they've been underfed, they eat a bit more to catch up (up to 1.5x daily target),
+  // but once caught up they stick to the 3000 kcal/person/day goal.
+  const dailyTarget = CREW * 3000
+  const missionKcalGoal = dailyTarget * day  // what total consumed should be by this day
+  const deficit = Math.max(0, missionKcalGoal - prev.totalKcal)  // how many kcal behind
+  // Allow catch-up eating: base target + up to 50% extra to recover deficit, capped at 1.5x
+  const catchUpTarget = Math.min(dailyTarget * 1.5, dailyTarget + deficit)
+  const pantryAfterHarvest = prev.pantryKcal + dayKcal
+  const consumed = Math.min(pantryAfterHarvest, catchUpTarget)
+  const newPantry = pantryAfterHarvest - consumed
+  const newTotalKcal = prev.totalKcal + consumed
+
   return {
     day, cells,
-    totalKcal: prev.totalKcal + dayKcal,
+    totalKcal: newTotalKcal,
     totalProteinG: prev.totalProteinG + dayProtein,
-    waterUsedL: prev.waterUsedL + (dayWaterUsed - waterRecycled),
-    waterRecycledL: prev.waterRecycledL + waterRecycled,
+    waterUsedL: totalWaterUsed,
+    waterRecycledL: totalWaterRecycled,
+    pantryKcal: newPantry,
     events: events.slice(-40),
-    kcalPerDay: [...prev.kcalPerDay, Math.round(dayKcal / CREW)],
+    kcalPerDay: [...prev.kcalPerDay, Math.round(consumed / CREW)],
+    proteinPerDay: [...prev.proteinPerDay, Math.round(dayProtein / CREW)],
+    cumulKcal: [...prev.cumulKcal, Math.round(newTotalKcal)],
+    waterEffPerDay: [...prev.waterEffPerDay, dayWaterEff],
+    failRatePerDay: [...prev.failRatePerDay, dayFailRate],
+    pantryPerDay: [...prev.pantryPerDay, Math.round(newPantry)],
   }
 }
 
@@ -114,7 +144,9 @@ function fastForward(cells: Cell[], targetDay: number, yieldMod: number, waterRe
   let state: SimState = {
     day: 0, cells: cells.map(c => ({ ...c })),
     totalKcal: 0, totalProteinG: 0, waterUsedL: 0, waterRecycledL: 0,
-    events: [], kcalPerDay: [],
+    pantryKcal: 0,
+    events: [], kcalPerDay: [], proteinPerDay: [],
+    cumulKcal: [], waterEffPerDay: [], failRatePerDay: [], pantryPerDay: [],
   }
   for (let d = 1; d <= targetDay; d++) {
     state = stepSim(state, yieldMod, waterRecycle, 0.0, areaM2)
@@ -145,6 +177,113 @@ function getAssessment(scores: { nutrient: number; protein: number; water: numbe
   else lines.push("Water recycling system performing at " + planet.waterRecycle + "%.")
   if (recs.length === 0) recs.push("All systems nominal. No adjustments required.")
   return { text: lines.join(" "), recs }
+}
+
+function LiveCharts({ sim }: { sim: SimState }) {
+  const W = 600, H = 80
+  const days = sim.cumulKcal.length
+  if (days < 2) return null
+
+  // Chart 1: cumulative kcal consumed vs goal
+  // Goal is a fixed straight line: 0 at Sol 0 → totalGoal at Sol MISSION_DAYS
+  // Both lines share the same x-scale (days mapped to W) and y-scale (totalGoal mapped to H)
+  const totalGoal = CREW * 3000 * MISSION_DAYS
+  const kcalPoints = sim.cumulKcal.map((v, i) =>
+    `${(i / (days - 1)) * W},${H - (v / totalGoal) * H}`).join(" ")
+  // Goal line: two fixed points — start and the proportional end for current day count
+  const goalEndX = W
+  const goalEndY = H - (CREW * 3000 * MISSION_DAYS / totalGoal) * H  // always 0 (top)
+  const goalStartY = H  // always bottom
+  const lastKcal = sim.cumulKcal[days - 1]
+  const goalNow = CREW * 3000 * days
+  const kcalPct = Math.round(lastKcal / goalNow * 100)
+  const kcalColor = kcalPct >= 100 ? "#27ae60" : kcalPct >= 70 ? "#f39c12" : "#c0392b"
+
+  // Chart 2: crop failure rate per day (7-day rolling avg)
+  const failData = sim.failRatePerDay
+  const smoothedFail = failData.map((_, i) => {
+    const w = failData.slice(Math.max(0, i - 6), i + 1)
+    return w.reduce((a, b) => a + b, 0) / w.length
+  })
+  const maxFail = Math.max(10, ...smoothedFail) * 1.1
+  const failPoints = smoothedFail.map((v, i) =>
+    `${(i / (days - 1)) * W},${H - (v / maxFail) * H}`).join(" ")
+  const healthyThreshold = 3
+  const thresholdY = H - (healthyThreshold / maxFail) * H
+  const lastFail = smoothedFail[smoothedFail.length - 1]
+
+  // Chart 3: calories in storage (pantry level over time) — shown as days of supply
+  const dailyNeed = CREW * 3000
+  const pantryData = sim.pantryPerDay
+  const maxSupplyDays = 60  // fixed scale: 0–60 days of supply
+  const pantryPoints = pantryData.map((v, i) =>
+    `${(i / (days - 1)) * W},${H - (Math.min(v / dailyNeed, maxSupplyDays) / maxSupplyDays) * H}`).join(" ")
+  const lastPantry = pantryData[pantryData.length - 1]
+  const pantryDays = Math.floor(lastPantry / dailyNeed)
+  const pantryColor = pantryDays >= 7 ? "#27ae60" : pantryDays >= 1 ? "#f39c12" : "#c0392b"
+  // reference lines at 7d and 30d
+  const line7Y = H - (7 / maxSupplyDays) * H
+  const line30Y = H - (30 / maxSupplyDays) * H
+
+  return (
+    <div className="live-charts-row">
+      {/* Chart 1: Cumulative Calories vs Goal */}
+      <div className="live-chart-card">
+        <div className="live-chart-header">
+          <span className="live-chart-title">Cumulative Calories vs Goal</span>
+          <span className="live-chart-badge" style={{ color: kcalColor }}>{kcalPct}% of target</span>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="live-chart-svg">
+          <line x1="0" y1={goalStartY} x2={goalEndX} y2={goalEndY} stroke="#27ae6055" strokeWidth="1.5" strokeDasharray="6 4" />
+          <polygon points={`0,${H} ${kcalPoints} ${W},${H}`} fill={`${kcalColor}18`} />
+          <polyline fill="none" stroke={kcalColor} strokeWidth="2" points={kcalPoints} />
+        </svg>
+        <div className="live-chart-legend">
+          <span className="lc-leg-item"><span className="lc-leg-line" style={{ borderTop: "2px dashed #27ae6055", background: "transparent" }} />Goal</span>
+          <span className="lc-leg-item"><span className="lc-leg-line" style={{ background: kcalColor }} />Consumed</span>
+          <span className="lc-leg-right">{Math.round(lastKcal / 1000).toLocaleString()}k / {Math.round(goalNow / 1000).toLocaleString()}k kcal</span>
+        </div>
+      </div>
+
+      {/* Chart 2: Crop Failure Rate */}
+      <div className="live-chart-card">
+        <div className="live-chart-header">
+          <span className="live-chart-title">Crop Failure Rate</span>
+          <span className="live-chart-badge" style={{ color: "#c0392b" }}>{lastFail.toFixed(1)}% failing</span>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="live-chart-svg">
+          <line x1="0" y1={thresholdY} x2={W} y2={thresholdY} stroke="#27ae6044" strokeWidth="1.5" strokeDasharray="6 4" />
+          <polygon points={`0,${H} ${failPoints} ${W},${H}`} fill="#c0392b18" />
+          <polyline fill="none" stroke="#c0392b" strokeWidth="2" points={failPoints} />
+        </svg>
+        <div className="live-chart-legend">
+          <span className="lc-leg-item"><span className="lc-leg-line" style={{ borderTop: "2px dashed #27ae6044", background: "transparent" }} />Healthy (&le;{healthyThreshold}%)</span>
+          <span className="lc-leg-item"><span className="lc-leg-line" style={{ background: "#c0392b" }} />7-day avg</span>
+          <span className="lc-leg-right">{lastFail <= healthyThreshold ? "System nominal" : lastFail <= 8 ? "AgentCore replanting" : "High failure — check allocation"}</span>
+        </div>
+      </div>
+
+      {/* Chart 3: Calories in Storage */}
+      <div className="live-chart-card">
+        <div className="live-chart-header">
+          <span className="live-chart-title">Calories in Storage</span>
+          <span className="live-chart-badge" style={{ color: pantryColor }}>
+            {pantryDays}d supply ({Math.round(lastPantry / 1000).toLocaleString()}k kcal)
+          </span>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="live-chart-svg">
+          <line x1="0" y1={line30Y} x2={W} y2={line30Y} stroke="#27ae6033" strokeWidth="1" strokeDasharray="4 3" />
+          <line x1="0" y1={line7Y} x2={W} y2={line7Y} stroke="#f39c1244" strokeWidth="1" strokeDasharray="4 3" />
+          <polygon points={`0,${H} ${pantryPoints} ${W},${H}`} fill={`${pantryColor}18`} />
+          <polyline fill="none" stroke={pantryColor} strokeWidth="2" points={pantryPoints} />
+        </svg>
+        <div className="live-chart-legend">
+          <span className="lc-leg-item"><span className="lc-leg-line" style={{ background: pantryColor }} />Days of supply (0–60d scale)</span>
+          <span className="lc-leg-right">{pantryDays >= 7 ? "Reserves healthy" : pantryDays >= 1 ? "Low reserves" : "Storage empty"}</span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function ScoreBar({ label, score }: { label: string; score: number }) {
@@ -360,7 +499,9 @@ export default function MissionSim() {
       setSim({
         day: 0, cells, totalKcal: 0, totalProteinG: 0, waterUsedL: 0, waterRecycledL: 0,
         events: [{ day: 0, text: `Mission initialized on ${p.name} - all crops at 0% growth, autonomous greenhouse online`, type: "info" }],
-        kcalPerDay: [],
+        kcalPerDay: [], proteinPerDay: [],
+        cumulKcal: [], waterEffPerDay: [], failRatePerDay: [],
+        pantryKcal: 0, pantryPerDay: [],
       })
     } else {
       // fast-forward from Sol 0 using current planet + alloc config
@@ -399,9 +540,14 @@ export default function MissionSim() {
     const protein = Math.min(100, Math.round(sim.totalProteinG / tProt * 100))
     const water = Math.min(100, Math.round(sim.waterRecycledL / tWater * 100 + 28))
     const overall = Math.round(nutrient * 0.4 + protein * 0.35 + water * 0.25)
+    const kcalDaysHit = sim.kcalPerDay.filter(v => v >= 3000).length
+    const kcalDaysMissed = sim.kcalPerDay.length - kcalDaysHit
+    const proteinDaysHit = sim.proteinPerDay.filter(v => v >= 90).length
+    const proteinDaysMissed = sim.proteinPerDay.length - proteinDaysHit
     return { nutrient, protein, water, overall,
       kcalPerDay: Math.round(sim.totalKcal / sim.day / CREW),
-      proteinPerDay: Math.round(sim.totalProteinG / sim.day / CREW) }
+      proteinPerDay: Math.round(sim.totalProteinG / sim.day / CREW),
+      kcalDaysHit, kcalDaysMissed, proteinDaysHit, proteinDaysMissed }
   })() : null
 
   const verdict = scores
@@ -595,7 +741,8 @@ export default function MissionSim() {
 
       {/* Main sim area */}
       {sim ? (
-        <div className="sim-main-grid">
+        <>
+          <div className="sim-main-grid">
           <div className="sim-field-wrap">
             <div className="sim-field-label">
               <span className="aws-tag aws-tag-sm">IoT TwinMaker</span>
@@ -647,8 +794,8 @@ export default function MissionSim() {
                 <div className="stat-grid">
                   <div className="stat-card"><span>kcal/crew/day</span><strong style={{ color: scores.kcalPerDay >= 3000 ? "#27ae60" : "#c0392b" }}>{scores.kcalPerDay.toLocaleString()}</strong><small>target 3,000</small></div>
                   <div className="stat-card"><span>protein/crew/day</span><strong style={{ color: scores.proteinPerDay >= 90 ? "#27ae60" : "#c0392b" }}>{scores.proteinPerDay}g</strong><small>target 90g</small></div>
+                  <div className="stat-card"><span>Food reserve</span><strong style={{ color: sim.pantryKcal > CREW * 3000 * 7 ? "#27ae60" : sim.pantryKcal > 0 ? "#f39c12" : "#c0392b" }}>{Math.round(sim.pantryKcal / 1000).toLocaleString()}k kcal</strong><small>{sim.pantryKcal > 0 ? `~${Math.floor(sim.pantryKcal / (CREW * 3000))}d supply` : "empty"}</small></div>
                   <div className="stat-card"><span>Water recycled</span><strong style={{ color: "#3498db" }}>{Math.round(sim.waterRecycledL).toLocaleString()}L</strong><small>{p.waterRecycle}% efficiency</small></div>
-                  <div className="stat-card"><span>Net water used</span><strong>{Math.round(sim.waterUsedL).toLocaleString()}L</strong><small>after recycling</small></div>
                 </div>
                 {/* Calorie & Protein running counters */}
                 <div className="running-counters">
@@ -727,6 +874,8 @@ export default function MissionSim() {
             </div>
           </div>
         </div>
+          {sim.cumulKcal.length > 2 && <LiveCharts sim={sim} />}
+        </>
       ) : (
         <div className="sim-idle">
           Configure planet and allocation above, then click "New Mission" or "Join Current" to start.

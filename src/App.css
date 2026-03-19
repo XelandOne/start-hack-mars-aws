@@ -156,6 +156,9 @@ body { background: #080810; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
 .counter-bar-bg { position: relative; height: 6px; background: #111; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
 .counter-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
 .counter-deficit { font-size: 0.68rem; font-weight: 600; }
+.counter-days-row { display: flex; gap: 10px; margin-top: 5px; font-size: 0.68rem; }
+.counter-days-hit { color: #27ae60; font-weight: 600; }
+.counter-days-missed { color: #c0392b; font-weight: 600; }
 
 /* AGENT CHAT */
 .agent-view { display: grid; grid-template-columns: 1fr 280px; gap: 16px; }
@@ -611,3 +614,16 @@ body { background: #080810; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
 .alloc-area-input { width: 64px; background: #080810; border: 1px solid #1a1a2e; border-radius: 4px; padding: 3px 6px; color: #ccc; font-size: 0.75rem; text-align: right; outline: none; }
 .alloc-area-input:focus { border-color: #c0392b; }
 .alloc-area-unit { font-size: 0.72rem; color: #555; flex-shrink: 0; }
+
+/* ── Live Charts Row ──────────────────────────────────────────────────────── */
+.live-charts-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 14px; }
+.live-chart-card { background: #0d0d18; border: 1px solid #1a1a2e; border-radius: 10px; padding: 14px; }
+.live-chart-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.live-chart-title { font-size: 0.72rem; color: #666; }
+.live-chart-badge { font-size: 0.72rem; font-weight: 700; }
+.live-chart-svg { display: block; width: 100%; height: 80px; background: #080810; border-radius: 4px; }
+.live-chart-legend { display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 0.62rem; color: #555; }
+.lc-leg-item { display: flex; align-items: center; gap: 5px; }
+.lc-leg-line { display: inline-block; width: 18px; height: 2px; border-radius: 1px; }
+.lc-leg-right { margin-left: auto; color: #444; font-size: 0.62rem; }
+@media (max-width: 700px) { .live-charts-row { grid-template-columns: 1fr; } }

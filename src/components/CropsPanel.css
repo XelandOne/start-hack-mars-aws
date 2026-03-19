@@ -1,0 +1,125 @@
+.crops-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.crops-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.filter-btns {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-btn {
+  padding: 0.35rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover, .filter-btn.active {
+  background: var(--bg-card-hover);
+  color: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.add-btn {
+  padding: 0.4rem 1rem;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid var(--accent-green);
+  border-radius: 8px;
+  color: var(--accent-green);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.add-btn:hover {
+  background: rgba(0, 255, 136, 0.2);
+}
+
+.add-form {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.form-input {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 120px;
+}
+
+.form-input:focus {
+  border-color: var(--accent-green);
+}
+
+.crops-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.crop-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.crop-emoji { font-size: 2rem; }
+.crop-name { font-weight: 600; font-size: 0.95rem; }
+.crop-zone { font-size: 0.75rem; color: var(--text-secondary); }
+.crop-days { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
+
+.crop-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.delete-btn {
+  padding: 0.35rem 0.6rem;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid var(--accent-red);
+  border-radius: 6px;
+  color: var(--accent-red);
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+
+.delete-btn:hover { background: rgba(255, 68, 68, 0.2); }
+
+.loading, .empty {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: 2rem;
+  text-align: center;
+}

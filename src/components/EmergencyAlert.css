@@ -1,0 +1,91 @@
+.emergency-alert {
+  background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(211, 47, 47, 0.5);
+  animation: emergencyPulse 2s infinite;
+  border: 2px solid #ff5252;
+}
+
+@keyframes emergencyPulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(211, 47, 47, 0.5);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(211, 47, 47, 0.8);
+  }
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.alert-icon {
+  font-size: 32px;
+  animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.alert-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.alert-body {
+  color: white;
+}
+
+.alert-message {
+  font-size: 14px;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.depleted-resources {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.depleted-resources strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.resource-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.depleted-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.alert-action {
+  text-align: center;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}

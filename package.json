@@ -1,0 +1,50 @@
+{
+  "name": "mars-greenhouse-app",
+  "version": "1.0.0",
+  "description": "Welcome, hackers! Your mission is to design and prototype an autonomous AI agent system capable of managing a greenhouse on Mars... You'll use AWS cloud services, an AI-powered Knowledge Base (via MCP) to get crop data, and Kiro as your AI coding assistant.",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "sandbox": "NODE_OPTIONS=\"--no-webstorage\" ampx sandbox"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adriank71/Syngenta-START-Hack-2026.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/adriank71/Syngenta-START-Hack-2026/issues"
+  },
+  "homepage": "https://github.com/adriank71/Syngenta-START-Hack-2026#readme",
+  "devDependencies": {
+    "@aws-amplify/backend": "^1.21.1",
+    "@aws-amplify/backend-cli": "^1.8.2",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/ui": "^4.1.0",
+    "aws-cdk-lib": "^2.234.1",
+    "constructs": "^10.5.1",
+    "esbuild": "^0.27.4",
+    "fast-check": "^4.6.0",
+    "jsdom": "^29.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.0"
+  },
+  "dependencies": {
+    "aws-amplify": "^6.16.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}

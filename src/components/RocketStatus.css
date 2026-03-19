@@ -1,0 +1,150 @@
+.rocket-status {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.no-missions {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+
+.missions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.mission-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+  border-left: 4px solid #666;
+}
+
+.mission-card.scheduled {
+  border-left-color: #9575cd;
+}
+
+.mission-card.in-transit {
+  border-left-color: #4fc3f7;
+}
+
+.mission-card.arrived {
+  border-left-color: #81c784;
+}
+
+.mission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.mission-id {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mission-status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mission-status-badge.scheduled {
+  background: rgba(149, 117, 205, 0.2);
+  color: #9575cd;
+}
+
+.mission-status-badge.in-transit {
+  background: rgba(79, 195, 247, 0.2);
+  color: #4fc3f7;
+}
+
+.mission-status-badge.arrived {
+  background: rgba(129, 199, 132, 0.2);
+  color: #81c784;
+}
+
+.mission-timeline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.timeline-point {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-label {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.timeline-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+
+.timeline-progress {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.timeline-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4fc3f7 0%, #81c784 100%);
+  transition: width 0.5s ease;
+}
+
+.mission-eta {
+  text-align: center;
+  padding: 8px;
+  background: rgba(79, 195, 247, 0.1);
+  border-radius: 6px;
+  color: #4fc3f7;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.mission-cargo {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cargo-label {
+  font-size: 12px;
+  color: #888;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.cargo-items {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.cargo-items span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

@@ -1,0 +1,161 @@
+.mission-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.timeline-card {
+  overflow: hidden;
+}
+
+.phase-track {
+  position: relative;
+  height: 60px;
+  margin-bottom: 3rem;
+}
+
+.phase-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+  overflow: hidden;
+}
+
+.phase-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.day-marker {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: calc(100% + 8px);
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255,255,255,0.6);
+  z-index: 10;
+}
+
+.milestones-track {
+  position: relative;
+  height: 60px;
+}
+
+.milestone {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.milestone.current .milestone-icon {
+  filter: drop-shadow(0 0 6px var(--accent-green));
+}
+
+.milestone-icon {
+  font-size: 1.25rem;
+}
+
+.milestone-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.milestone-day {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+
+.mission-bottom {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+}
+
+.nutrition-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.nutrition-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nutrition-label {
+  width: 70px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.nutrition-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.nutrition-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.nutrition-val {
+  width: 70px;
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.nutrition-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.mission-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mission-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mission-stat-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.mission-stat-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+@media (max-width: 900px) {
+  .mission-bottom { grid-template-columns: 1fr; }
+}

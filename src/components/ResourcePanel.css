@@ -1,0 +1,121 @@
+.resource-panel {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.panel-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.resource-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.resource-card.ok {
+  border-color: rgba(129, 199, 132, 0.3);
+}
+
+.resource-card.warning {
+  border-color: rgba(255, 213, 79, 0.5);
+  background: rgba(255, 213, 79, 0.1);
+}
+
+.resource-card.critical {
+  border-color: rgba(244, 67, 54, 0.5);
+  background: rgba(244, 67, 54, 0.1);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.resource-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.resource-icon {
+  font-size: 24px;
+}
+
+.resource-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.resource-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 10px;
+  font-family: 'Courier New', monospace;
+}
+
+.resource-bar-container {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.resource-bar {
+  height: 100%;
+  transition: width 0.5s ease;
+  border-radius: 4px;
+}
+
+.resource-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #888;
+}
+
+.resource-percentage {
+  font-weight: 600;
+}
+
+.resource-days {
+  color: #aaa;
+}
+
+.resource-warning,
+.resource-critical {
+  margin-top: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.resource-warning {
+  background: rgba(255, 213, 79, 0.2);
+  color: #ffd54f;
+}
+
+.resource-critical {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}

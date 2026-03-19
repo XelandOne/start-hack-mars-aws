@@ -1,0 +1,32 @@
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1629;
+  --bg-card: #141d35;
+  --bg-card-hover: #1a2540;
+  --accent-green: #00ff88;
+  --accent-orange: #ff6b35;
+  --accent-blue: #4fc3f7;
+  --accent-red: #ff4444;
+  --accent-yellow: #ffd700;
+  --text-primary: #e8eaf6;
+  --text-secondary: #8892b0;
+  --border: #1e2d4a;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

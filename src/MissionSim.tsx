@@ -71,7 +71,7 @@ function buildCells(alloc: Alloc, areaM2: number, yieldMod: number, enabled: Rec
 }
 
 function stepSim(prev: SimState, yieldMod: number, waterRecyclePct: number, stormChance: number, areaM2: number): SimState {
-  const areaScale = areaM2 / 200
+  const cellAreaM2 = areaM2 / TOTAL_CELLS  // each cell represents this many m²
   const day = prev.day + 1
   const cells = prev.cells.map(c => ({ ...c }))
   const events = [...prev.events]
@@ -88,7 +88,7 @@ function stepSim(prev: SimState, yieldMod: number, waterRecyclePct: number, stor
     const age = day - c.plantedDay
     if (age >= c.cycleDays) {
       if (!c.failed) {
-        const kg = CROPS[c.crop].yieldKg * yieldMod * stormPenalty * areaScale
+        const kg = CROPS[c.crop].yieldKg * yieldMod * stormPenalty * cellAreaM2
         dayKcal += (kg * 1000 / 100) * CROPS[c.crop].kcal
         dayProtein += (kg * 1000 / 100) * CROPS[c.crop].protein
         dayWaterUsed += kg * CROPS[c.crop].waterL
@@ -113,12 +113,14 @@ function stepSim(prev: SimState, yieldMod: number, waterRecyclePct: number, stor
   // Pantry logic: harvest goes into store, crew consumes to hit overall mission calorie goal.
   // If they've been underfed, they eat a bit more to catch up (up to 1.5x daily target),
   // but once caught up they stick to the 3000 kcal/person/day goal.
+  // Storage is capped at 90 days of crew supply to save space — excess is discarded.
   const dailyTarget = CREW * 3000
+  const pantryMax = dailyTarget * 90
   const missionKcalGoal = dailyTarget * day  // what total consumed should be by this day
   const deficit = Math.max(0, missionKcalGoal - prev.totalKcal)  // how many kcal behind
   // Allow catch-up eating: base target + up to 50% extra to recover deficit, capped at 1.5x
   const catchUpTarget = Math.min(dailyTarget * 1.5, dailyTarget + deficit)
-  const pantryAfterHarvest = prev.pantryKcal + dayKcal
+  const pantryAfterHarvest = Math.min(prev.pantryKcal + dayKcal, pantryMax)
   const consumed = Math.min(pantryAfterHarvest, catchUpTarget)
   const newPantry = pantryAfterHarvest - consumed
   const newTotalKcal = prev.totalKcal + consumed
@@ -429,7 +431,7 @@ export default function MissionSim() {
   // alloc = % share per crop (independent sliders, don't need to sum to 100)
   const [alloc, setAlloc] = useState<Alloc>({ lettuce: 17, potato: 45, radish: 8, beans: 25, herbs: 5 })
   const [cropEnabled, setCropEnabled] = useState<Record<CropKey, boolean>>({ lettuce: true, potato: true, radish: true, beans: true, herbs: true })
-  const [areaM2, setAreaM2] = useState(100)
+  const [areaM2, setAreaM2] = useState(500)
   const [running, setRunning] = useState(false)
   const [speed, setSpeed] = useState(3)
   const [sim, setSim] = useState<SimState | null>(null)
@@ -451,12 +453,14 @@ export default function MissionSim() {
     try {
       const prompt =
         `Given a greenhouse area of ${areaM2} m2 on ${p.name} (yield modifier ${p.yieldMod}, ` +
-        `radiation: ${p.radiation}, solar flux: ${p.solarFlux}), recommend the optimal crop allocation. ` +
+        `radiation: ${p.radiation}, solar flux: ${p.solarFlux}), recommend the optimal crop allocation for a crew of 4. ` +
+        `Crew targets: 3000 kcal/person/day, 56g protein/person/day (RDA 0.8g/kg). ` +
+        `Crop yields per m2 per cycle: potato 6kg/95d (77kcal/100g, 2g protein), beans 3kg/60d (100kcal/100g, 7g protein), lettuce 4kg/37d (15kcal/100g), radish 3kg/25d (16kcal/100g), herbs 1kg/30d. ` +
         `Respond with ONLY a single line of valid JSON, no explanation, no markdown, no code block. ` +
         `Keys must be exactly: lettuce, potato, radish, beans, herbs, reasoning. ` +
         `lettuce/potato/radish/beans/herbs are integers 0-100 representing the recommended % share of the area. ` +
-        `reasoning is a 2-3 sentence string explaining why this specific allocation is optimal for the given area size and environment — focus on how the m2 is best utilized, which crops earn their space, and which were trimmed because the area doesn't justify them. ` +
-        `Example output: {"lettuce":20,"potato":40,"radish":10,"beans":25,"herbs":5,"reasoning":"At 100 m2, potatoes and beans claim the bulk of the floor to hit caloric and protein targets for the crew. Lettuce earns a modest share for micronutrients without wasting space. Radish and herbs are trimmed — at this scale their output doesn't justify the m2."}`
+        `reasoning is a 2-3 sentence string explaining why this allocation hits the caloric and protein targets for the given area. ` +
+        `Example output: {"lettuce":15,"potato":45,"radish":10,"beans":25,"herbs":5,"reasoning":"Potatoes dominate for calories. Beans cover the 56g/person/day protein target. Lettuce and radish fill micronutrient needs."}`
       const res = await fetch(`${AGENT_API}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -534,7 +538,7 @@ export default function MissionSim() {
 
   const scores = sim && sim.day > 0 ? (() => {
     const tKcal = CREW * 3000 * sim.day
-    const tProt = CREW * 90 * sim.day
+    const tProt = CREW * 56 * sim.day  // 0.8g/kg for ~70kg crew member (RDA)
     const tWater = CREW * 9 * sim.day
     const nutrient = Math.min(100, Math.round(sim.totalKcal / tKcal * 100))
     const protein = Math.min(100, Math.round(sim.totalProteinG / tProt * 100))
@@ -542,7 +546,7 @@ export default function MissionSim() {
     const overall = Math.round(nutrient * 0.4 + protein * 0.35 + water * 0.25)
     const kcalDaysHit = sim.kcalPerDay.filter(v => v >= 3000).length
     const kcalDaysMissed = sim.kcalPerDay.length - kcalDaysHit
-    const proteinDaysHit = sim.proteinPerDay.filter(v => v >= 90).length
+    const proteinDaysHit = sim.proteinPerDay.filter(v => v >= 56).length
     const proteinDaysMissed = sim.proteinPerDay.length - proteinDaysHit
     return { nutrient, protein, water, overall,
       kcalPerDay: Math.round(sim.totalKcal / sim.day / CREW),
@@ -621,14 +625,14 @@ export default function MissionSim() {
           {/* Area size slider */}
           <div className="alloc-area-row">
             <span className="alloc-area-label">Total Area</span>
-            <input type="range" min={2} max={600} step={1} value={Math.min(areaM2, 600)}
+            <input type="range" min={100} max={800} step={10} value={Math.min(areaM2, 800)}
               onChange={e => { setAreaM2(+e.target.value); setSim(null) }} />
             <input
-              type="number" min={2} max={600} step={1}
+              type="number" min={100} max={800} step={10}
               className="alloc-area-input"
               value={areaM2}
               onChange={e => {
-                const v = Math.max(2, +e.target.value)
+                const v = Math.max(100, Math.min(800, +e.target.value))
                 setAreaM2(v)
                 setSim(null)
               }}

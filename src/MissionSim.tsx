@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 
+const AGENT_API = 'http://127.0.0.1:8000'
+
 interface PlanetConfig {
   name: string; gravity: number; solarFlux: number; dustStorm: number
   radiation: string; waterIce: boolean; tempExt: number; co2Atm: boolean
@@ -299,6 +301,54 @@ export default function MissionSim() {
     yieldMod: 0.80, waterRecycle: 85, custom: true,
   })
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [allocLoading, setAllocLoading] = useState(false)
+  const [allocError, setAllocError] = useState<string | null>(null)
+  const [allocReasoning, setAllocReasoning] = useState<string | null>(null)
+
+  async function fetchRecommendedAlloc() {
+    setAllocLoading(true)
+    setAllocError(null)
+    setAllocReasoning(null)
+    try {
+      const prompt =
+        `Given a greenhouse area of ${areaM2} m2 on ${p.name} (yield modifier ${p.yieldMod}, ` +
+        `radiation: ${p.radiation}, solar flux: ${p.solarFlux}), recommend the optimal crop allocation. ` +
+        `Respond with ONLY a single line of valid JSON, no explanation, no markdown, no code block. ` +
+        `Keys must be exactly: lettuce, potato, radish, beans, herbs, reasoning. ` +
+        `lettuce/potato/radish/beans/herbs are integers 0-100 representing the recommended % share of the area. ` +
+        `reasoning is a 2-3 sentence string explaining why this specific allocation is optimal for the given area size and environment — focus on how the m2 is best utilized, which crops earn their space, and which were trimmed because the area doesn't justify them. ` +
+        `Example output: {"lettuce":20,"potato":40,"radish":10,"beans":25,"herbs":5,"reasoning":"At 100 m2, potatoes and beans claim the bulk of the floor to hit caloric and protein targets for the crew. Lettuce earns a modest share for micronutrients without wasting space. Radish and herbs are trimmed — at this scale their output doesn't justify the m2."}`
+      const res = await fetch(`${AGENT_API}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: prompt }),
+      })
+      const data = await res.json()
+      const text: string = data.response ?? ''
+      // extract first {...} block, allowing whitespace/newlines inside
+      const match = text.match(/\{[\s\S]*?\}/)
+      if (!match) throw new Error('No JSON found in agent response')
+      const parsed = JSON.parse(match[0]) as Partial<Alloc & { reasoning: string }>
+      const next: Alloc = {
+        lettuce: typeof parsed.lettuce === 'number' ? Math.max(0, Math.min(100, parsed.lettuce)) : alloc.lettuce,
+        potato:  typeof parsed.potato  === 'number' ? Math.max(0, Math.min(100, parsed.potato))  : alloc.potato,
+        radish:  typeof parsed.radish  === 'number' ? Math.max(0, Math.min(100, parsed.radish))  : alloc.radish,
+        beans:   typeof parsed.beans   === 'number' ? Math.max(0, Math.min(100, parsed.beans))   : alloc.beans,
+        herbs:   typeof parsed.herbs   === 'number' ? Math.max(0, Math.min(100, parsed.herbs))   : alloc.herbs,
+      }
+      if (typeof parsed.reasoning === 'string' && parsed.reasoning.trim()) {
+        setAllocReasoning(parsed.reasoning.trim())
+      }
+      setAlloc(next)
+      setSim(null)
+    } catch (e) {
+      setAllocError(e instanceof Error && e.message !== 'No JSON found in agent response'
+        ? 'Agent unavailable. Is it running on port 8000?'
+        : 'Agent returned unexpected format. Try again.')
+    } finally {
+      setAllocLoading(false)
+    }
+  }
 
   const p = planets[planetKey]
   const activeCropKeys = CROP_KEYS.filter(k => cropEnabled[k])
@@ -438,6 +488,23 @@ export default function MissionSim() {
               }}
             />
             <span className="alloc-area-unit">m2</span>
+          </div>
+
+          <div className="alloc-ai-row">
+            <button
+              className="sim-btn sim-btn-ai"
+              onClick={fetchRecommendedAlloc}
+              disabled={allocLoading}
+              title="Ask the AI agent for the optimal crop distribution for this area"
+            >
+              {allocLoading ? '⏳ Asking agent...' : '🤖 AI Recommend'}
+            </button>
+            {allocError && <span className="alloc-ai-error">{allocError}</span>}
+            {allocReasoning && !allocError && (
+              <span className="alloc-ai-reasoning" title={allocReasoning}>
+                💡 <span className="alloc-ai-reasoning-text">{allocReasoning}</span>
+              </span>
+            )}
           </div>
 
           <div className="alloc-grid">

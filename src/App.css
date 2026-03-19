@@ -580,3 +580,20 @@ body { background: #080810; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
   50%  { transform: rotate(180deg) scaleX(0.7); }
   to   { transform: rotate(360deg) scaleX(1); }
 }
+
+/* AI Recommend alloc row */
+.alloc-ai-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.sim-btn-ai { background: #0a1a2a; border-color: #1a4a6a; color: #5ab4e0; }
+.sim-btn-ai:hover { background: #0d2035; color: #7dd0f5; border-color: #2a6a9a; }
+.sim-btn-ai:disabled { opacity: 0.5; cursor: not-allowed; }
+.alloc-ai-error { font-size: 0.68rem; color: #c0392b; }
+.alloc-ai-reasoning { display: flex; align-items: flex-start; gap: 4px; font-size: 0.68rem; color: #5ab4e0; max-width: 340px; line-height: 1.4; }
+.alloc-ai-reasoning-text { color: #7dd0f5; font-style: italic; }
+
+/* Area row */
+.alloc-area-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.alloc-area-label { font-size: 0.72rem; color: #666; flex-shrink: 0; width: 70px; }
+.alloc-area-row input[type=range] { flex: 1; accent-color: #c0392b; }
+.alloc-area-input { width: 64px; background: #080810; border: 1px solid #1a1a2e; border-radius: 4px; padding: 3px 6px; color: #ccc; font-size: 0.75rem; text-align: right; outline: none; }
+.alloc-area-input:focus { border-color: #c0392b; }
+.alloc-area-unit { font-size: 0.72rem; color: #555; flex-shrink: 0; }

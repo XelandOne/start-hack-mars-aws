@@ -16,11 +16,11 @@ const DEFAULT_PLANETS: Record<string, PlanetConfig> = {
 }
 
 const CROPS = {
-  lettuce: { label: "Lettuce", cycleDays: 37,  yieldKg: 4.0, kcal: 15,  protein: 1.4, waterL: 25,  color: "#27ae60", failRate: 0.03 },
-  potato:  { label: "Potato",  cycleDays: 95,  yieldKg: 6.0, kcal: 77,  protein: 2.0, waterL: 100, color: "#c0392b", failRate: 0.02 },
-  radish:  { label: "Radish",  cycleDays: 25,  yieldKg: 3.0, kcal: 16,  protein: 0.7, waterL: 20,  color: "#e67e22", failRate: 0.04 },
-  beans:   { label: "Beans",   cycleDays: 60,  yieldKg: 3.0, kcal: 100, protein: 7.0, waterL: 80,  color: "#f39c12", failRate: 0.02 },
-  herbs:   { label: "Herbs",   cycleDays: 30,  yieldKg: 1.0, kcal: 40,  protein: 2.0, waterL: 15,  color: "#1abc9c", failRate: 0.04 },
+  lettuce: { label: "Lettuce", emoji: "🥬", cycleDays: 37,  yieldKg: 4.0, kcal: 15,  protein: 1.4, waterL: 25,  color: "#27ae60", failRate: 0.03 },
+  potato:  { label: "Potato",  emoji: "🥔", cycleDays: 95,  yieldKg: 6.0, kcal: 77,  protein: 2.0, waterL: 100, color: "#c0392b", failRate: 0.02 },
+  radish:  { label: "Radish",  emoji: "🌱", cycleDays: 25,  yieldKg: 3.0, kcal: 16,  protein: 0.7, waterL: 20,  color: "#e67e22", failRate: 0.04 },
+  beans:   { label: "Beans",   emoji: "🫘", cycleDays: 60,  yieldKg: 3.0, kcal: 100, protein: 7.0, waterL: 80,  color: "#f39c12", failRate: 0.02 },
+  herbs:   { label: "Herbs",   emoji: "🌿", cycleDays: 30,  yieldKg: 1.0, kcal: 40,  protein: 2.0, waterL: 15,  color: "#1abc9c", failRate: 0.04 },
 }
 type CropKey = keyof typeof CROPS
 const CROP_KEYS = Object.keys(CROPS) as CropKey[]
@@ -40,6 +40,7 @@ interface SimState {
   totalKcal: number; totalProteinG: number
   waterUsedL: number; waterRecycledL: number
   pantryKcal: number  // food store — surplus accumulates, drawn down on lean days
+  pantryByCrop: Record<CropKey, number>  // kg stored per crop type
   events: SimEvent[]; kcalPerDay: number[]; proteinPerDay: number[]
   cumulKcal: number[]  // cumulative total kcal consumed at each day
   waterEffPerDay: number[] // recycled / (recycled + net used) * 100 per day
@@ -76,6 +77,7 @@ function stepSim(prev: SimState, yieldMod: number, waterRecyclePct: number, stor
   const cells = prev.cells.map(c => ({ ...c }))
   const events = [...prev.events]
   let dayKcal = 0, dayProtein = 0, dayWaterUsed = 0
+  const dayKgByCrop: Record<CropKey, number> = { lettuce: 0, potato: 0, radish: 0, beans: 0, herbs: 0 }
 
   let stormPenalty = 1.0
   if (stormChance > 0 && Math.random() < stormChance / MISSION_DAYS * 2) {
@@ -92,6 +94,7 @@ function stepSim(prev: SimState, yieldMod: number, waterRecyclePct: number, stor
         dayKcal += (kg * 1000 / 100) * CROPS[c.crop].kcal
         dayProtein += (kg * 1000 / 100) * CROPS[c.crop].protein
         dayWaterUsed += kg * CROPS[c.crop].waterL
+        dayKgByCrop[c.crop] += kg
         cells[i].harvested += 1
         if (cells[i].harvested === 1 && Math.random() < 0.08) {
           events.push({ day, text: `Sol ${day}: ${CROPS[c.crop].label} harvested - ${kg.toFixed(1)}kg, cycle complete`, type: "ok" })
@@ -125,6 +128,15 @@ function stepSim(prev: SimState, yieldMod: number, waterRecyclePct: number, stor
   const newPantry = pantryAfterHarvest - consumed
   const newTotalKcal = prev.totalKcal + consumed
 
+  // Update per-crop kg in storage: add today's harvest, then scale down proportionally by consumption
+  const prevByCrop = prev.pantryByCrop
+  const newByCropAfterHarvest: Record<CropKey, number> = { ...prevByCrop }
+  for (const k of CROP_KEYS) newByCropAfterHarvest[k] += dayKgByCrop[k]
+  // Scale down by consumption ratio (consume proportionally from all crops)
+  const consumeRatio = pantryAfterHarvest > 0 ? consumed / pantryAfterHarvest : 0
+  const newPantryByCrop: Record<CropKey, number> = { lettuce: 0, potato: 0, radish: 0, beans: 0, herbs: 0 }
+  for (const k of CROP_KEYS) newPantryByCrop[k] = newByCropAfterHarvest[k] * (1 - consumeRatio)
+
   return {
     day, cells,
     totalKcal: newTotalKcal,
@@ -132,6 +144,7 @@ function stepSim(prev: SimState, yieldMod: number, waterRecyclePct: number, stor
     waterUsedL: totalWaterUsed,
     waterRecycledL: totalWaterRecycled,
     pantryKcal: newPantry,
+    pantryByCrop: newPantryByCrop,
     events: events.slice(-40),
     kcalPerDay: [...prev.kcalPerDay, Math.round(consumed / CREW)],
     proteinPerDay: [...prev.proteinPerDay, Math.round(dayProtein / CREW)],
@@ -147,6 +160,7 @@ function fastForward(cells: Cell[], targetDay: number, yieldMod: number, waterRe
     day: 0, cells: cells.map(c => ({ ...c })),
     totalKcal: 0, totalProteinG: 0, waterUsedL: 0, waterRecycledL: 0,
     pantryKcal: 0,
+    pantryByCrop: { lettuce: 0, potato: 0, radish: 0, beans: 0, herbs: 0 },
     events: [], kcalPerDay: [], proteinPerDay: [],
     cumulKcal: [], waterEffPerDay: [], failRatePerDay: [], pantryPerDay: [],
   }
@@ -442,6 +456,7 @@ export default function MissionSim() {
     yieldMod: 0.80, waterRecycle: 85, custom: true,
   })
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [startMode, setStartMode] = useState<"new" | "join" | null>(null)
   const [allocLoading, setAllocLoading] = useState(false)
   const [allocError, setAllocError] = useState<string | null>(null)
   const [allocReasoning, setAllocReasoning] = useState<string | null>(null)
@@ -451,33 +466,119 @@ export default function MissionSim() {
     setAllocError(null)
     setAllocReasoning(null)
     try {
+      // Daily yield per m² (kcal and protein)
+      const kcalPerM2: Record<CropKey, number> = {
+        potato:  (6000/100*77)  / 95  * p.yieldMod,
+        beans:   (3000/100*100) / 60  * p.yieldMod,
+        lettuce: (4000/100*15)  / 37  * p.yieldMod,
+        radish:  (3000/100*16)  / 25  * p.yieldMod,
+        herbs:   (1000/100*40)  / 30  * p.yieldMod,
+      }
+      const proteinPerM2: Record<CropKey, number> = {
+        potato:  (6000/100*2)   / 95  * p.yieldMod,
+        beans:   (3000/100*7)   / 60  * p.yieldMod,
+        lettuce: (4000/100*1.4) / 37  * p.yieldMod,
+        radish:  (3000/100*0.7) / 25  * p.yieldMod,
+        herbs:   (1000/100*2)   / 30  * p.yieldMod,
+      }
+      const kcalTarget = 4 * 3000       // 12000 kcal/day
+      const proteinTarget = 4 * 56      // 224g/day
+      const minProtein = 4 * 30         // 120g/day — survival floor
+
+      // Tier 1: can we even hit calories? Maximize kcal (all potato)
+      const maxKcal = areaM2 * kcalPerM2.potato
+      const kcalConstrained = maxKcal < kcalTarget
+
+      let allotment: Record<CropKey, number>
+      let tier: number
+      let tierNote: string
+
+      if (kcalConstrained) {
+        // TIER 1: area too small to hit calorie goal — maximize calories, minimal protein
+        // Give 85% to potato, 15% to beans (best protein/m²)
+        const beansM2 = Math.round(areaM2 * 0.15)
+        allotment = { potato: areaM2 - beansM2, beans: beansM2, lettuce: 0, radish: 0, herbs: 0 }
+        tier = 1
+        tierNote = `Area is too small to meet the ${kcalTarget} kcal/day target (max possible: ${Math.round(maxKcal)} kcal/day). Maximizing calories with minimal protein support.`
+      } else {
+        // How much potato needed to hit calorie target alone?
+        const potatoForKcal = Math.ceil(kcalTarget / kcalPerM2.potato)
+        const surplus = areaM2 - potatoForKcal
+
+        // How much beans needed to hit protein target (potato contributes some protein too)?
+        const proteinFromPotato = (m2: number) => m2 * proteinPerM2.potato
+        const beansForFullProtein = Math.max(0,
+          Math.ceil((proteinTarget - proteinFromPotato(potatoForKcal)) / proteinPerM2.beans)
+        )
+        const beansForMinProtein = Math.max(0,
+          Math.ceil((minProtein - proteinFromPotato(potatoForKcal)) / proteinPerM2.beans)
+        )
+
+        if (surplus <= 0 || surplus < beansForMinProtein) {
+          // TIER 1: barely enough for calories, squeeze in minimum protein beans
+          const beansM2 = Math.min(Math.round(areaM2 * 0.12), beansForMinProtein)
+          const potatoM2 = areaM2 - beansM2
+          allotment = { potato: potatoM2, beans: beansM2, lettuce: 0, radish: 0, herbs: 0 }
+          tier = 1
+          tierNote = `Tight area — prioritizing calorie target with minimum viable protein (${Math.round(minProtein)}g/day floor).`
+        } else if (surplus < beansForFullProtein + Math.round(areaM2 * 0.15)) {
+          // TIER 2: hit calories + enough protein, no room for variety
+          const beansM2 = Math.min(surplus, beansForFullProtein)
+          const potatoM2 = areaM2 - beansM2
+          allotment = { potato: potatoM2, beans: beansM2, lettuce: 0, radish: 0, herbs: 0 }
+          tier = 2
+          tierNote = `Sufficient area to meet calorie and protein targets. No surplus for variety crops.`
+        } else {
+          // TIER 3: calories + full protein + variety
+          // Always keep a minimum beans allocation for protein diversity even if potatoes cover protein
+          const minBeansM2 = Math.max(beansForFullProtein, Math.round(areaM2 * 0.12))
+          const beansM2 = Math.min(minBeansM2, surplus)
+          const remainingAfterBeans = surplus - beansM2
+          // Variety split from remaining surplus: 50% lettuce, 30% radish, 20% herbs
+          const lettuceM2 = Math.round(remainingAfterBeans * 0.50)
+          const radishM2  = Math.round(remainingAfterBeans * 0.30)
+          const herbsM2   = remainingAfterBeans - lettuceM2 - radishM2
+          const potatoM2  = potatoForKcal
+          allotment = { potato: potatoM2, beans: beansM2, lettuce: lettuceM2, radish: radishM2, herbs: herbsM2 }
+          tier = 3
+          tierNote = `Ample area — calorie and protein targets met, surplus allocated to beans, lettuce, radish, and herbs for dietary variety and micronutrients.`
+        }
+      }
+
+      const achievedKcal    = CROP_KEYS.reduce((s, k) => s + allotment[k] * kcalPerM2[k], 0)
+      const achievedProtein = CROP_KEYS.reduce((s, k) => s + allotment[k] * proteinPerM2[k], 0)
+      const kcalCoverage    = Math.round(achievedKcal / kcalTarget * 100)
+      const proteinCoverage = Math.round(achievedProtein / proteinTarget * 100)
+
       const prompt =
-        `Given a greenhouse area of ${areaM2} m2 on ${p.name} (yield modifier ${p.yieldMod}, ` +
-        `radiation: ${p.radiation}, solar flux: ${p.solarFlux}), recommend the optimal crop allocation for a crew of 4. ` +
-        `Crew targets: 3000 kcal/person/day, 56g protein/person/day (RDA 0.8g/kg). ` +
-        `Crop yields per m2 per cycle: potato 6kg/95d (77kcal/100g, 2g protein), beans 3kg/60d (100kcal/100g, 7g protein), lettuce 4kg/37d (15kcal/100g), radish 3kg/25d (16kcal/100g), herbs 1kg/30d. ` +
-        `Respond with ONLY a single line of valid JSON, no explanation, no markdown, no code block. ` +
-        `Keys must be exactly: lettuce, potato, radish, beans, herbs, reasoning. ` +
-        `lettuce/potato/radish/beans/herbs are integers 0-100 representing the recommended % share of the area. ` +
-        `reasoning is a 2-3 sentence string explaining why this allocation hits the caloric and protein targets for the given area. ` +
-        `Example output: {"lettuce":15,"potato":45,"radish":10,"beans":25,"herbs":5,"reasoning":"Potatoes dominate for calories. Beans cover the 56g/person/day protein target. Lettuce and radish fill micronutrient needs."}`
-      const res = await fetch(`${AGENT_API}/chat`, {
+        `You are explaining a Tier ${tier} crop allocation for a ${areaM2} m² greenhouse on ${p.name} (yield modifier ${p.yieldMod}, radiation: ${p.radiation}). ` +
+        `Allocation: potato=${allotment.potato}m², beans=${allotment.beans}m², lettuce=${allotment.lettuce}m², radish=${allotment.radish}m², herbs=${allotment.herbs}m². ` +
+        `Achieves ${kcalCoverage}% of calorie target and ${proteinCoverage}% of protein target. Context: ${tierNote} ` +
+        `Respond with ONLY a single line of valid JSON. Keys: lettuce, potato, radish, beans, herbs (use exact values above), reasoning (2-3 sentences mentioning the tier, area, and coverage). No markdown, no code block. ` +
+        `Example: {"lettuce":${allotment.lettuce},"potato":${allotment.potato},"radish":${allotment.radish},"beans":${allotment.beans},"herbs":${allotment.herbs},"reasoning":"${tierNote} Covers ${kcalCoverage}% kcal and ${proteinCoverage}% protein."}`
+      const res = await fetch(`${AGENT_API}/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: prompt }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        const detail = data.detail ?? `HTTP ${res.status}`
+        throw new Error(detail)
+      }
       const text: string = data.response ?? ''
-      // extract first {...} block, allowing whitespace/newlines inside
-      const match = text.match(/\{[\s\S]*?\}/)
-      if (!match) throw new Error('No JSON found in agent response')
-      const parsed = JSON.parse(match[0]) as Partial<Alloc & { reasoning: string }>
+      // find the last } to get the full JSON object (non-greedy regex cuts short)
+      const start = text.indexOf('{')
+      const end = text.lastIndexOf('}')
+      if (start === -1 || end === -1 || end <= start) throw new Error('No JSON found in agent response')
+      const parsed = JSON.parse(text.slice(start, end + 1)) as Partial<Alloc & { reasoning: string }>
+      // Model returns m² — normalize to % for sliders, but use mathAlloc as ground truth
       const next: Alloc = {
-        lettuce: typeof parsed.lettuce === 'number' ? Math.max(0, Math.min(100, parsed.lettuce)) : alloc.lettuce,
-        potato:  typeof parsed.potato  === 'number' ? Math.max(0, Math.min(100, parsed.potato))  : alloc.potato,
-        radish:  typeof parsed.radish  === 'number' ? Math.max(0, Math.min(100, parsed.radish))  : alloc.radish,
-        beans:   typeof parsed.beans   === 'number' ? Math.max(0, Math.min(100, parsed.beans))   : alloc.beans,
-        herbs:   typeof parsed.herbs   === 'number' ? Math.max(0, Math.min(100, parsed.herbs))   : alloc.herbs,
+        lettuce: Math.round(allotment.lettuce / areaM2 * 100),
+        potato:  Math.round(allotment.potato  / areaM2 * 100),
+        radish:  Math.round(allotment.radish  / areaM2 * 100),
+        beans:   Math.round(allotment.beans   / areaM2 * 100),
+        herbs:   Math.round(allotment.herbs   / areaM2 * 100),
       }
       if (typeof parsed.reasoning === 'string' && parsed.reasoning.trim()) {
         setAllocReasoning(parsed.reasoning.trim())
@@ -485,9 +586,12 @@ export default function MissionSim() {
       setAlloc(next)
       setSim(null)
     } catch (e) {
-      setAllocError(e instanceof Error && e.message !== 'No JSON found in agent response'
-        ? 'Agent unavailable. Is it running on port 8000?'
-        : 'Agent returned unexpected format. Try again.')
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.includes('fetch') || msg.includes('NetworkError') || msg.includes('Failed to fetch')) {
+        setAllocError('Agent unavailable. Is it running on port 8000?')
+      } else {
+        setAllocError(msg || 'Agent returned unexpected format. Try again.')
+      }
     } finally {
       setAllocLoading(false)
     }
@@ -505,7 +609,7 @@ export default function MissionSim() {
         events: [{ day: 0, text: `Mission initialized on ${p.name} - all crops at 0% growth, autonomous greenhouse online`, type: "info" }],
         kcalPerDay: [], proteinPerDay: [],
         cumulKcal: [], waterEffPerDay: [], failRatePerDay: [],
-        pantryKcal: 0, pantryPerDay: [],
+        pantryKcal: 0, pantryByCrop: { lettuce: 0, potato: 0, radish: 0, beans: 0, herbs: 0 }, pantryPerDay: [],
       })
     } else {
       // fast-forward from Sol 0 using current planet + alloc config
@@ -697,17 +801,160 @@ export default function MissionSim() {
       <div className="mission-control-box">
         <div className="config-section-title">Mission Control</div>
         <div className="config-section-hint">Start from Sol 0 or jump to the current mission day (Sol 127) to evaluate the live greenhouse state.</div>
+
+        {/* Dashboard — always visible, shows live data when sim is running */}
+        {(() => {
+          const pantryMax = CREW * 3000 * 90 // 90-day cap from sim logic
+          if (!sim) {
+            // Pre-sim placeholder
+            return (
+              <div className="mc-dashboard">
+                <div className="mc-dash-card mc-dash-storage">
+                  <div className="mc-dash-card-title">🗄 SILO — Food Storage</div>
+                  <div className="mc-dash-empty">—</div>
+                  <div className="mc-dash-bar-bg"><div className="mc-dash-bar-fill" style={{ width: "0%", background: "#333" }} /></div>
+                  <div className="mc-dash-meta">0% capacity · 0d supply · 0 kcal</div>
+                </div>
+                <div className="mc-dash-card mc-dash-growing">
+                  <div className="mc-dash-card-title">🌱 BLOOM — Crops Growing</div>
+                  <div className="mc-dash-empty">Start simulation to see live crop data</div>
+                </div>
+                <div className="mc-dash-card mc-dash-harvest">
+                  <div className="mc-dash-card-title">🌾 Near Harvest</div>
+                  <div className="mc-dash-empty">—</div>
+                </div>
+              </div>
+            )
+          }
+
+          const activeCells = sim.cells.filter(c => !c.failed)
+          const growingByCrop = CROP_KEYS.map(k => {
+            const cells = activeCells.filter(c => c.crop === k)
+            const growing = cells.filter(c => {
+              const age = sim.day - c.plantedDay
+              return age < c.cycleDays
+            })
+            const nearHarvest = cells.filter(c => {
+              const age = sim.day - c.plantedDay
+              const pct = age / c.cycleDays
+              return pct >= 0.8 && pct < 1
+            })
+            // avg growth % for this crop
+            const avgPct = growing.length > 0
+              ? Math.round(growing.reduce((a, c) => a + Math.min(1, (sim.day - c.plantedDay) / c.cycleDays), 0) / growing.length * 100)
+              : 0
+            return { k, growing: growing.length, nearHarvest: nearHarvest.length, total: cells.length, avgPct }
+          }).filter(x => x.total > 0)
+
+          const pantryDays = sim.pantryKcal > 0 ? Math.floor(sim.pantryKcal / (CREW * 3000)) : 0
+          const pantryCapPct = Math.min(100, Math.round((sim.pantryKcal / pantryMax) * 100))
+          const pantryColor = pantryDays >= 14 ? "#27ae60" : pantryDays >= 5 ? "#f39c12" : "#c0392b"
+          const totalNearHarvest = growingByCrop.reduce((a, x) => a + x.nearHarvest, 0)
+          const totalGrowing = growingByCrop.reduce((a, x) => a + x.growing, 0)
+          const failedCells = sim.cells.filter(c => c.failed && (sim.day - c.plantedDay) < c.cycleDays).length
+
+          return (
+            <div className="mc-dashboard">
+              {/* SILO — Storage */}
+              <div className="mc-dash-card mc-dash-storage">
+                <div className="mc-dash-card-title">🗄 SILO — Food Storage</div>
+                <div className="mc-dash-value" style={{ color: pantryColor }}>
+                  {Math.round(sim.pantryKcal / 1000).toLocaleString()}k kcal
+                </div>
+                <div className="mc-dash-bar-bg">
+                  <div className="mc-dash-bar-fill" style={{ width: `${pantryCapPct}%`, background: pantryColor }} />
+                </div>
+                <div className="mc-dash-meta">
+                  <span style={{ color: pantryColor }}>{pantryCapPct}% capacity</span>
+                  <span className="mc-dash-sep">·</span>
+                  <span style={{ color: pantryColor }}>{pantryDays > 0 ? `~${pantryDays}d supply` : "reserves empty"}</span>
+                </div>
+                {/* Per-crop breakdown */}
+                <div className="mc-dash-silo-crops">
+                  {CROP_KEYS.filter(k => sim.pantryByCrop[k] > 0.05).map(k => {
+                    const kg = sim.pantryByCrop[k]
+                    const totalKg = CROP_KEYS.reduce((a, ck) => a + sim.pantryByCrop[ck], 0)
+                    const pct = totalKg > 0 ? Math.round((kg / totalKg) * 100) : 0
+                    return (
+                      <div key={k} className="mc-dash-silo-row">
+                        <span className="mc-dash-crop-dot" style={{ background: CROPS[k].color }} />
+                        <span className="mc-dash-silo-name">{CROPS[k].emoji} {CROPS[k].label}</span>
+                        <div className="mc-dash-silo-bar-bg">
+                          <div className="mc-dash-silo-bar-fill" style={{ width: `${pct}%`, background: CROPS[k].color + "88" }} />
+                        </div>
+                        <span className="mc-dash-silo-kg" style={{ color: CROPS[k].color }}>{kg >= 1 ? `${Math.round(kg)}kg` : `${Math.round(kg * 1000)}g`}</span>
+                      </div>
+                    )
+                  })}
+                  {CROP_KEYS.every(k => sim.pantryByCrop[k] <= 0.05) && (
+                    <div className="mc-dash-meta" style={{ marginTop: 4 }}>no food in storage yet</div>
+                  )}
+                </div>
+              </div>
+
+              {/* BLOOM — Crops Growing */}
+              <div className="mc-dash-card mc-dash-growing">
+                <div className="mc-dash-card-title">🌱 BLOOM — Crops Growing</div>
+                <div className="mc-dash-value" style={{ color: totalGrowing > 0 ? "#27ae60" : "#555" }}>
+                  {totalGrowing} <span className="mc-dash-value-sub">/ {TOTAL_CELLS} cells active</span>
+                </div>
+                {failedCells > 0 && (
+                  <div className="mc-dash-failed">⚠ {failedCells} cells failed — AgentCore replanting</div>
+                )}
+                <div className="mc-dash-crop-list">
+                  {growingByCrop.map(({ k, growing, total, avgPct }) => (
+                    <div key={k} className="mc-dash-crop-row">
+                      <span className="mc-dash-crop-dot" style={{ background: CROPS[k].color }} />
+                      <span className="mc-dash-crop-name">{CROPS[k].emoji} {CROPS[k].label}</span>
+                      <div className="mc-dash-crop-bar-bg">
+                        <div className="mc-dash-crop-bar-fill" style={{ width: `${avgPct}%`, background: CROPS[k].color + "99" }} />
+                      </div>
+                      <span className="mc-dash-crop-pct" style={{ color: CROPS[k].color }}>{avgPct}%</span>
+                      <span className="mc-dash-crop-count">{growing}<span className="mc-dash-crop-total">/{total}</span></span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Near Harvest */}
+              <div className="mc-dash-card mc-dash-harvest">
+                <div className="mc-dash-card-title">🌾 Near Harvest (≥80%)</div>
+                <div className="mc-dash-value" style={{ color: totalNearHarvest > 0 ? "#f39c12" : "#444" }}>
+                  {totalNearHarvest} cells
+                </div>
+                {totalNearHarvest > 0 ? (
+                  <div className="mc-dash-harvest-list">
+                    {growingByCrop.filter(x => x.nearHarvest > 0).map(({ k, nearHarvest }) => (
+                      <div key={k} className="mc-dash-harvest-row">
+                        <span className="mc-dash-crop-dot" style={{ background: CROPS[k].color }} />
+                        <span className="mc-dash-crop-name">{CROPS[k].emoji} {CROPS[k].label}</span>
+                        <span className="mc-dash-harvest-badge" style={{ background: CROPS[k].color + "22", color: CROPS[k].color, borderColor: CROPS[k].color + "55" }}>
+                          {nearHarvest} cells ready
+                        </span>
+                        <span className="mc-dash-harvest-kcal" style={{ color: "#555" }}>
+                          ~{Math.round(nearHarvest * (areaM2 / TOTAL_CELLS) * CROPS[k].yieldKg * 10 * CROPS[k].kcal / 100).toLocaleString()} kcal
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mc-dash-meta" style={{ marginTop: 8 }}>No crops approaching harvest</div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
         <div className="mission-ctrl-grid">
           <div className="ctrl-block">
             <div className="ctrl-block-label">Start Mode</div>
             <div className="sim-btn-row">
               <button
-                className={"sim-btn" + (!sim ? " sim-btn-new-active" : " primary")}
-                onClick={() => initSim(0)}
+                className={"sim-btn" + (startMode === "new" ? " sim-btn-new-active" : "")}
+                onClick={() => { setStartMode("new"); initSim(0) }}
               >New Mission (Sol 0)</button>
               <button
-                className={"sim-btn" + (sim ? " sim-btn-join-active" : "")}
-                onClick={() => initSim(127)}
+                className={"sim-btn" + (startMode === "join" ? " sim-btn-join-active" : "")}
+                onClick={() => { setStartMode("join"); initSim(127) }}
               >Join Current (Sol 127)</button>
             </div>
           </div>
@@ -730,7 +977,7 @@ export default function MissionSim() {
               {sim && !running && sim.day < MISSION_DAYS && (
                 <button className="sim-btn" onClick={tick}>+{speed}d</button>
               )}
-              {sim && <button className="sim-btn sim-btn-reset" onClick={() => { setSim(null); setRunning(false) }}>Reset</button>}
+              {sim && <button className="sim-btn sim-btn-reset" onClick={() => { setSim(null); setRunning(false); setStartMode(null) }}>Reset</button>}
             </div>
           </div>
         </div>
@@ -756,10 +1003,13 @@ export default function MissionSim() {
               {sim.cells.map((c, i) => {
                 const age = sim.day - c.plantedDay
                 const pct = Math.min(1, age / c.cycleDays)
+                const failed = c.failed && age < c.cycleDays
                 return (
                   <div key={i} className="field-cell" style={{ background: cellColor(c, sim.day) }}
-                    title={`${CROPS[c.crop].label} | ${c.failed && age < c.cycleDays ? "FAILED" : Math.round(pct * 100) + "% grown"} | age ${age}d`}>
-                    {c.failed && age < c.cycleDays && <span className="cell-fail">x</span>}
+                    title={`${CROPS[c.crop].label} | ${failed ? "FAILED" : Math.round(pct * 100) + "% grown"} | age ${age}d`}>
+                    <span className="cell-emoji">
+                      {failed ? "💀" : pct >= 0.5 ? CROPS[c.crop].emoji : "🌱"}
+                    </span>
                   </div>
                 )
               })}

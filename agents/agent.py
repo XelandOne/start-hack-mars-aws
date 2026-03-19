@@ -31,31 +31,64 @@ You have expert knowledge about:
 - Greenhouse area allocation: 45% potatoes, 25% legumes, 17% leafy greens, 13% radishes/herbs
 Answer concisely and practically."""
 
+JSON_SYSTEM_PROMPT = """You are a Mars greenhouse crop allocation optimizer.
+You MUST respond with ONLY a single line of valid JSON — no explanation, no markdown, no code block, no extra text.
+The JSON must have exactly these keys: lettuce, potato, radish, beans, herbs (integers 0-100), and reasoning (string).
+Any response that is not pure JSON will cause a system failure."""
+
 class ChatRequest(BaseModel):
     message: str
 
 class ChatResponse(BaseModel):
     response: str
 
+def invoke_bedrock(system_prompt: str, message: str, max_tokens: int = 512, temperature: float = 0.7) -> str:
+    client = boto3.client("bedrock-runtime", region_name=REGION)
+    body = {
+        "messages": [{"role": "user", "content": [{"text": message}]}],
+        "system": [{"text": system_prompt}],
+        "inferenceConfig": {"maxTokens": max_tokens, "temperature": temperature}
+    }
+    response = client.invoke_model(
+        modelId="us.amazon.nova-lite-v1:0",
+        body=json.dumps(body),
+        contentType="application/json"
+    )
+    result = json.loads(response["body"].read())
+    return result["output"]["message"]["content"][0]["text"]
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     try:
         logger.info(f"Received: {req.message}")
-        client = boto3.client("bedrock-runtime", region_name=REGION)
-        body = {
-            "messages": [{"role": "user", "content": [{"text": req.message}]}],
-            "system": [{"text": SYSTEM_PROMPT}],
-            "inferenceConfig": {"maxTokens": 512, "temperature": 0.7}
-        }
-        response = client.invoke_model(
-            modelId="us.amazon.nova-lite-v1:0",
-            body=json.dumps(body),
-            contentType="application/json"
-        )
-        result = json.loads(response["body"].read())
-        text = result["output"]["message"]["content"][0]["text"]
+        text = invoke_bedrock(SYSTEM_PROMPT, req.message)
         logger.info(f"OK: {text[:80]}")
         return ChatResponse(response=text)
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/recommend", response_model=ChatResponse)
+def recommend(req: ChatRequest):
+    """Dedicated endpoint for structured JSON crop allocation recommendations."""
+    try:
+        logger.info(f"Recommend request: {req.message}")
+        # Use temperature=0 for deterministic JSON output
+        text = invoke_bedrock(JSON_SYSTEM_PROMPT, req.message, max_tokens=256, temperature=0)
+        logger.info(f"Recommend response: {text[:120]}")
+        # Extract the JSON object robustly — find first { and last }
+        start = text.find('{')
+        end = text.rfind('}')
+        if start == -1 or end == -1 or end <= start:
+            raise ValueError(f"No JSON object found in response: {text}")
+        json_str = text[start:end+1]
+        json.loads(json_str)  # validate
+        return ChatResponse(response=json_str)
+    except json.JSONDecodeError:
+        logger.error(f"Model returned non-JSON: {text}")
+        raise HTTPException(status_code=422, detail=f"Model returned non-JSON: {text}")
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -873,3 +873,70 @@ body { background: #080810; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
   text-align: right;
   flex-shrink: 0;
 }
+
+/* MISSION OVERVIEW */
+.mission-overview-card h3 { justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.mission-ov-status { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid; letter-spacing: 0.5px; }
+.mission-ov-grid { display: grid; grid-template-columns: 1.4fr 1.2fr 1fr; gap: 20px; }
+.mission-ov-section { display: flex; flex-direction: column; gap: 8px; }
+.mission-ov-section-title { font-size: 0.7rem; color: #555; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px; }
+.mission-ov-storage-header { display: flex; align-items: baseline; gap: 10px; }
+.mission-ov-big { font-size: 1.5rem; font-weight: 700; }
+.mission-ov-sub { font-size: 0.8rem; font-weight: 600; }
+.mission-ov-bar-bg { height: 6px; background: #1a1a2e; border-radius: 3px; overflow: hidden; }
+.mission-ov-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.mission-ov-cap { font-size: 0.65rem; color: #444; }
+.mission-ov-crop-list { display: flex; flex-direction: column; gap: 5px; margin-top: 2px; }
+.mission-ov-crop-row { display: flex; align-items: center; gap: 6px; }
+.mission-ov-crop-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.mission-ov-crop-name { font-size: 0.75rem; color: #aaa; width: 68px; flex-shrink: 0; }
+.mission-ov-crop-bar-bg { flex: 1; height: 5px; background: #1a1a2e; border-radius: 3px; overflow: hidden; }
+.mission-ov-crop-bar-fill { height: 100%; border-radius: 3px; }
+.mission-ov-crop-kg { font-size: 0.7rem; font-weight: 600; width: 38px; text-align: right; flex-shrink: 0; }
+.mission-ov-harvest-list { display: flex; flex-direction: column; gap: 10px; }
+.mission-ov-harvest-row { display: flex; flex-direction: column; gap: 4px; }
+.mission-ov-harvest-top { display: flex; align-items: center; gap: 6px; }
+.mission-ov-harvest-name { font-size: 0.8rem; color: #ccc; flex: 1; }
+.mission-ov-harvest-badge { font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; border: 1px solid; flex-shrink: 0; }
+.mission-ov-harvest-bar-bg { position: relative; height: 6px; background: #1a1a2e; border-radius: 3px; overflow: visible; }
+.mission-ov-harvest-bar-fill { height: 100%; border-radius: 3px; }
+.mission-ov-harvest-pct { position: absolute; right: 0; top: -14px; font-size: 0.62rem; }
+.mission-ov-status-list { display: flex; flex-direction: column; gap: 6px; }
+.mission-ov-stat { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; background: #080810; border-radius: 6px; gap: 8px; }
+.mission-ov-stat-label { font-size: 0.72rem; color: #555; }
+.mission-ov-stat-val { font-size: 0.78rem; font-weight: 600; text-align: right; }
+
+/* MISSION BRIEFING */
+.mission-briefing-btn { margin-left: auto; background: #c0392b18; border: 1px solid #c0392b55; color: #ff6b6b; font-size: 0.72rem; padding: 4px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.mission-briefing-btn:hover:not(:disabled) { background: #c0392b33; border-color: #c0392b88; }
+.mission-briefing-btn:disabled { opacity: 0.5; cursor: default; }
+.mission-briefing-panel { margin-top: 16px; border-top: 1px solid #1a1a2e; padding-top: 14px; text-align: left; }
+.mission-briefing-loading { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: #555; }
+.briefing-pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff6b6b; flex-shrink: 0; animation: blink 1s ease-in-out infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+.mission-briefing-error { font-size: 0.78rem; color: #c0392b; text-align: left; }
+
+/* Briefing structured sections */
+.mission-briefing-sections { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; text-align: left; }
+.mbf-section { display: flex; flex-direction: column; gap: 8px; }
+.mbf-section-title { font-size: 0.68rem; color: #555; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px; }
+.mbf-assessment { font-size: 0.82rem; color: #bbb; line-height: 1.6; margin: 0; text-align: left; }
+
+/* Risks */
+.mbf-risks { display: flex; flex-direction: column; gap: 7px; }
+.mbf-risk-row { display: flex; align-items: flex-start; gap: 8px; text-align: left; }
+.mbf-severity { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
+.mbf-sev-high   { background: #c0392b22; color: #e74c3c; border: 1px solid #c0392b44; }
+.mbf-sev-medium { background: #f39c1222; color: #f39c12; border: 1px solid #f39c1244; }
+.mbf-sev-low    { background: #27ae6022; color: #27ae60; border: 1px solid #27ae6044; }
+.mbf-risk-content { display: flex; flex-direction: column; gap: 2px; }
+.mbf-risk-label { font-size: 0.78rem; color: #ccc; font-weight: 600; }
+.mbf-risk-detail { font-size: 0.74rem; color: #666; line-height: 1.4; }
+
+/* To-Dos */
+.mbf-todos { display: flex; flex-direction: column; gap: 7px; }
+.mbf-todo-row { display: flex; align-items: flex-start; gap: 10px; text-align: left; }
+.mbf-todo-num { width: 20px; height: 20px; border-radius: 50%; background: #1a1a2e; border: 1px solid #2a2a3e; color: #555; font-size: 0.68rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.mbf-todo-content { display: flex; flex-direction: column; gap: 2px; }
+.mbf-todo-action { font-size: 0.78rem; color: #ccc; font-weight: 600; }
+.mbf-todo-detail { font-size: 0.74rem; color: #666; line-height: 1.4; }

@@ -62,6 +62,225 @@ const blockLog = [
   { hash: "0xf7a3...b667", action: "Mission day 127 snapshot stored to S3", time: "00:00" },
 ]
 
+// Static mission snapshot data (Sol 127)
+const MISSION_STORAGE = {
+  totalKcal: 187400,
+  pantryDays: 15,
+  capacityPct: 17,
+  byCrop: [
+    { name: "Potato",  emoji: "🥔", kg: 312, pct: 58, color: "#c0392b" },
+    { name: "Beans",   emoji: "🫘", kg: 124, pct: 23, color: "#f39c12" },
+    { name: "Lettuce", emoji: "🥬", kg: 68,  pct: 13, color: "#27ae60" },
+    { name: "Radish",  emoji: "🌱", kg: 22,  pct: 4,  color: "#e67e22" },
+    { name: "Herbs",   emoji: "🌿", kg: 11,  pct: 2,  color: "#1abc9c" },
+  ],
+}
+
+const NEAR_HARVEST = [
+  { name: "Radish",  emoji: "🌱", cells: 18, pct: 94, daysLeft: 2,  color: "#e67e22" },
+  { name: "Lettuce", emoji: "🥬", cells: 32, pct: 88, daysLeft: 4,  color: "#27ae60" },
+  { name: "Herbs",   emoji: "🌿", cells: 9,  pct: 83, daysLeft: 5,  color: "#1abc9c" },
+]
+
+const AGENT_API = 'http://127.0.0.1:8000'
+
+function MissionOverview() {
+  const [briefing, setBriefing] = useState<{
+    assessment: string
+    risks: { label: string; detail: string; severity: string }[]
+    todos: { priority: number; action: string; detail: string }[]
+  } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const pantryColor = MISSION_STORAGE.pantryDays >= 14 ? "#27ae60"
+    : MISSION_STORAGE.pantryDays >= 5 ? "#f39c12" : "#c0392b"
+  const supplyStatus = MISSION_STORAGE.pantryDays >= 14
+    ? { label: "Food Supply Sorted", color: "#27ae60", icon: "✓" }
+    : MISSION_STORAGE.pantryDays >= 5
+    ? { label: "Reserves Running Low", color: "#f39c12", icon: "⚠" }
+    : { label: "Food Supply Critical", color: "#c0392b", icon: "✕" }
+
+  async function requestBriefing() {
+    setLoading(true)
+    setError(null)
+    setBriefing(null)
+    const prompt = `You are the Mars greenhouse AI. Analyse this mission snapshot and respond with ONLY a single JSON object — no markdown, no extra text.
+
+DATA: Sol 127/450 | Mars | 4 crew | 500m² greenhouse | Storage: 187k kcal (15d supply, 17% capacity) | Potato 312kg, Beans 124kg, Lettuce 68kg, Radish 22kg, Herbs 11kg | Allocation: Potato 45%, Beans 25%, Lettuce 17%, Radish 8%, Herbs 5% | Near harvest: Radish 94% (2d), Lettuce 88% (4d), Herbs 83% (5d) | Output: 3240 kcal/crew/day, 94g protein/crew/day | Cells: 187/200 active, 13 failed | Sensors: all OK except power 4.2kW (elevated) | Anomalies: LED Zone B power fluctuation, water recycling at 81% (expected 88%)
+
+Respond with this exact JSON structure:
+{"assessment":"2-3 sentence overall status","risks":[{"label":"short label","detail":"one sentence","severity":"high|medium|low"},{"label":"...","detail":"...","severity":"..."},{"label":"...","detail":"...","severity":"..."}],"todos":[{"priority":1,"action":"short action title","detail":"one sentence"},{"priority":2,"action":"...","detail":"..."},{"priority":3,"action":"...","detail":"..."},{"priority":4,"action":"...","detail":"..."}]}`
+
+    try {
+      const res = await fetch(`${AGENT_API}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: prompt }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail ?? `HTTP ${res.status}`)
+      const text: string = data.response ?? ''
+      const start = text.indexOf('{')
+      const end = text.lastIndexOf('}')
+      if (start === -1 || end === -1) throw new Error('No JSON in response')
+      setBriefing(JSON.parse(text.slice(start, end + 1)))
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(msg.includes('fetch') || msg.includes('Failed') ? 'Agent offline — is it running on port 8000?' : msg)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="dash-card full mission-overview-card">
+      <h3>
+        Mission Overview — Sol 127
+        <span className="mission-ov-status" style={{ color: supplyStatus.color, borderColor: supplyStatus.color + "44", background: supplyStatus.color + "11" }}>
+          {supplyStatus.icon} {supplyStatus.label}
+        </span>
+        <button
+          className="mission-briefing-btn"
+          onClick={requestBriefing}
+          disabled={loading}
+        >
+          {loading ? 'Analysing...' : 'AI Mission Briefing'}
+        </button>
+      </h3>
+      <div className="mission-ov-grid">
+
+        {/* Storage Allocations */}
+        <div className="mission-ov-section">
+          <div className="mission-ov-section-title">Storage Allocations</div>
+          <div className="mission-ov-storage-header">
+            <span className="mission-ov-big" style={{ color: pantryColor }}>
+              {(MISSION_STORAGE.totalKcal / 1000).toFixed(0)}k kcal
+            </span>
+            <span className="mission-ov-sub" style={{ color: pantryColor }}>
+              ~{MISSION_STORAGE.pantryDays}d supply
+            </span>
+          </div>
+          <div className="mission-ov-bar-bg">
+            <div className="mission-ov-bar-fill" style={{ width: `${MISSION_STORAGE.capacityPct}%`, background: pantryColor }} />
+          </div>
+          <div className="mission-ov-cap">{MISSION_STORAGE.capacityPct}% of 90-day capacity</div>
+          <div className="mission-ov-crop-list">
+            {MISSION_STORAGE.byCrop.map(c => (
+              <div key={c.name} className="mission-ov-crop-row">
+                <span className="mission-ov-crop-dot" style={{ background: c.color }} />
+                <span className="mission-ov-crop-name">{c.emoji} {c.name}</span>
+                <div className="mission-ov-crop-bar-bg">
+                  <div className="mission-ov-crop-bar-fill" style={{ width: `${c.pct}%`, background: c.color + "88" }} />
+                </div>
+                <span className="mission-ov-crop-kg" style={{ color: c.color }}>{c.kg}kg</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Near Harvest */}
+        <div className="mission-ov-section">
+          <div className="mission-ov-section-title">Crops Near Harvest</div>
+          <div className="mission-ov-harvest-list">
+            {NEAR_HARVEST.map(c => (
+              <div key={c.name} className="mission-ov-harvest-row">
+                <div className="mission-ov-harvest-top">
+                  <span className="mission-ov-crop-dot" style={{ background: c.color }} />
+                  <span className="mission-ov-harvest-name">{c.emoji} {c.name}</span>
+                  <span className="mission-ov-harvest-badge" style={{ color: c.color, borderColor: c.color + "55", background: c.color + "11" }}>
+                    {c.cells} cells · {c.daysLeft}d left
+                  </span>
+                </div>
+                <div className="mission-ov-harvest-bar-bg">
+                  <div className="mission-ov-harvest-bar-fill" style={{ width: `${c.pct}%`, background: c.color + "99" }} />
+                  <span className="mission-ov-harvest-pct" style={{ color: c.color }}>{c.pct}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Status */}
+        <div className="mission-ov-section">
+          <div className="mission-ov-section-title">Quick Status</div>
+          <div className="mission-ov-status-list">
+            <div className="mission-ov-stat">
+              <span className="mission-ov-stat-label">Daily Calorie Output</span>
+              <span className="mission-ov-stat-val" style={{ color: "#27ae60" }}>3,240 kcal/crew</span>
+            </div>
+            <div className="mission-ov-stat">
+              <span className="mission-ov-stat-label">Protein per Crew</span>
+              <span className="mission-ov-stat-val" style={{ color: "#27ae60" }}>94g / day</span>
+            </div>
+            <div className="mission-ov-stat">
+              <span className="mission-ov-stat-label">Active Crop Cells</span>
+              <span className="mission-ov-stat-val" style={{ color: "#ccc" }}>187 / 200</span>
+            </div>
+            <div className="mission-ov-stat">
+              <span className="mission-ov-stat-label">Failed Cells</span>
+              <span className="mission-ov-stat-val" style={{ color: "#f39c12" }}>13 — replanting</span>
+            </div>
+            <div className="mission-ov-stat">
+              <span className="mission-ov-stat-label">Next Harvest</span>
+              <span className="mission-ov-stat-val" style={{ color: "#e67e22" }}>Radish in ~2 sols</span>
+            </div>
+            <div className="mission-ov-stat">
+              <span className="mission-ov-stat-label">Mission Progress</span>
+              <span className="mission-ov-stat-val" style={{ color: "#3498db" }}>28% (Sol 127/450)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* AI Briefing Response */}
+      {(briefing || loading || error) && (
+        <div className="mission-briefing-panel">
+          {loading && <div className="mission-briefing-loading"><span className="briefing-pulse" />Analysing mission data...</div>}
+          {error && <div className="mission-briefing-error">{error}</div>}
+          {briefing && (
+            <div className="mission-briefing-sections">
+              <div className="mbf-section">
+                <div className="mbf-section-title">Situation Assessment</div>
+                <p className="mbf-assessment">{briefing.assessment}</p>
+              </div>
+              <div className="mbf-section">
+                <div className="mbf-section-title">Risks to Monitor</div>
+                <div className="mbf-risks">
+                  {briefing.risks.map((r, i) => (
+                    <div key={i} className="mbf-risk-row">
+                      <span className={`mbf-severity mbf-sev-${r.severity}`}>{r.severity}</span>
+                      <div className="mbf-risk-content">
+                        <span className="mbf-risk-label">{r.label}</span>
+                        <span className="mbf-risk-detail">{r.detail}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mbf-section">
+                <div className="mbf-section-title">Upcoming To-Dos</div>
+                <div className="mbf-todos">
+                  {briefing.todos.map((t) => (
+                    <div key={t.priority} className="mbf-todo-row">
+                      <span className="mbf-todo-num">{t.priority}</span>
+                      <div className="mbf-todo-content">
+                        <span className="mbf-todo-action">{t.action}</span>
+                        <span className="mbf-todo-detail">{t.detail}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const CROP_INFO = [
   { name: "Lettuce", cycle: "30-45 days", yieldStr: "3-5 kg/m2", tempMin: 15, tempMax: 22, tempStress: 25, humidity: "50-70%", light: "150-250 umol/m2/s", water: "High", role: "Micronutrient stabilizer", calories: "~15 kcal/100g", protein: "~1.4g/100g", notes: "Risk of bolting above 25C.", forecast: { next: "4.3 kg/m2", conf: "91%", rec: "Maintain current light schedule. Increase N by 5%." }, color: "#27ae60", growthPct: 65 },
   { name: "Potato",  cycle: "70-120 days", yieldStr: "4-8 kg/m2", tempMin: 16, tempMax: 20, tempStress: 28, humidity: "Moderate", light: "200-400 umol/m2/s", water: "Moderate-High", role: "Primary energy backbone", calories: "~77 kcal/100g", protein: "~2g/100g", notes: "High potassium demand. Sensitive to waterlogging.", forecast: { next: "6.8 kg/m2", conf: "87%", rec: "Reduce irrigation by 8%. Potassium levels optimal." }, color: "#c0392b", growthPct: 78 },
@@ -116,6 +335,9 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
+
+      {/* Mission Overview */}
+      <MissionOverview />
 
       {/* Live Sensors */}
       <div className="dash-card full">

@@ -650,6 +650,59 @@ export default function MissionSim() {
                   <div className="stat-card"><span>Water recycled</span><strong style={{ color: "#3498db" }}>{Math.round(sim.waterRecycledL).toLocaleString()}L</strong><small>{p.waterRecycle}% efficiency</small></div>
                   <div className="stat-card"><span>Net water used</span><strong>{Math.round(sim.waterUsedL).toLocaleString()}L</strong><small>after recycling</small></div>
                 </div>
+                {/* Calorie & Protein running counters */}
+                <div className="running-counters">
+                  <div className="counter-card">
+                    <div className="counter-header">
+                      <span className="counter-title">Total Calories Produced</span>
+                      <span className="counter-value">{Math.round(sim.totalKcal).toLocaleString()} kcal</span>
+                    </div>
+                    <div className="counter-avg-row">
+                      <span className="counter-avg-label">Avg / crew / day</span>
+                      <span className="counter-avg-val" style={{ color: scores.kcalPerDay >= 3000 ? "#27ae60" : "#c0392b" }}>
+                        {scores.kcalPerDay.toLocaleString()} kcal
+                      </span>
+                      <span className="counter-goal-label">goal: 3,000</span>
+                    </div>
+                    <div className="counter-bar-bg">
+                      <div className="counter-bar-fill" style={{
+                        width: `${Math.min(100, (scores.kcalPerDay / 3000) * 100)}%`,
+                        background: scores.kcalPerDay >= 3000 ? "#27ae60" : scores.kcalPerDay >= 2000 ? "#f39c12" : "#c0392b"
+                      }} />
+                      <div className="counter-bar-goal" style={{ left: "100%" }} />
+                    </div>
+                    <div className="counter-deficit" style={{ color: scores.kcalPerDay >= 3000 ? "#27ae60" : "#c0392b" }}>
+                      {scores.kcalPerDay >= 3000
+                        ? `+${(scores.kcalPerDay - 3000).toLocaleString()} kcal surplus`
+                        : `${(3000 - scores.kcalPerDay).toLocaleString()} kcal deficit`}
+                    </div>
+                  </div>
+
+                  <div className="counter-card">
+                    <div className="counter-header">
+                      <span className="counter-title">Total Protein Produced</span>
+                      <span className="counter-value">{Math.round(sim.totalProteinG).toLocaleString()} g</span>
+                    </div>
+                    <div className="counter-avg-row">
+                      <span className="counter-avg-label">Avg / crew / day</span>
+                      <span className="counter-avg-val" style={{ color: scores.proteinPerDay >= 90 ? "#27ae60" : "#c0392b" }}>
+                        {scores.proteinPerDay}g
+                      </span>
+                      <span className="counter-goal-label">goal: 90g</span>
+                    </div>
+                    <div className="counter-bar-bg">
+                      <div className="counter-bar-fill" style={{
+                        width: `${Math.min(100, (scores.proteinPerDay / 90) * 100)}%`,
+                        background: scores.proteinPerDay >= 90 ? "#27ae60" : scores.proteinPerDay >= 60 ? "#f39c12" : "#c0392b"
+                      }} />
+                    </div>
+                    <div className="counter-deficit" style={{ color: scores.proteinPerDay >= 90 ? "#27ae60" : "#c0392b" }}>
+                      {scores.proteinPerDay >= 90
+                        ? `+${(scores.proteinPerDay - 90)}g surplus`
+                        : `${(90 - scores.proteinPerDay)}g deficit`}
+                    </div>
+                  </div>
+                </div>
               </>
             )}
             {assessment && (

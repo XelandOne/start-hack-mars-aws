@@ -143,6 +143,20 @@ body { background: #080810; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
 .stat-card small { font-size: 0.68rem; color: #444; }
 .braket-note { background: #0a0a1a; border: 1px solid #3498db33; border-radius: 6px; padding: 10px; font-size: 0.75rem; color: #3498db; margin-top: 12px; }
 
+/* Running counters */
+.running-counters { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.counter-card { background: #080810; border: 1px solid #1a1a2e; border-radius: 8px; padding: 12px; }
+.counter-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.counter-title { font-size: 0.7rem; color: #555; }
+.counter-value { font-size: 1.05rem; font-weight: 700; color: #ccc; }
+.counter-avg-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+.counter-avg-label { font-size: 0.68rem; color: #444; }
+.counter-avg-val { font-size: 0.9rem; font-weight: 700; }
+.counter-goal-label { font-size: 0.65rem; color: #333; margin-left: auto; }
+.counter-bar-bg { position: relative; height: 6px; background: #111; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+.counter-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.counter-deficit { font-size: 0.68rem; font-weight: 600; }
+
 /* AGENT CHAT */
 .agent-view { display: grid; grid-template-columns: 1fr 280px; gap: 16px; }
 .agent-chat { background: #0d0d18; border: 1px solid #1a1a2e; border-radius: 10px; display: flex; flex-direction: column; height: 580px; }

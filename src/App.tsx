@@ -3,6 +3,11 @@ import "./App.css"
 import AgentChat from "./AgentChat"
 import MissionSim from "./MissionSim"
 
+function trackFill(value: number, min: number, max: number, color = "#a83210"): React.CSSProperties {
+  const pct = ((value - min) / (max - min)) * 100
+  return { background: `linear-gradient(to right, ${color} 0%, ${color} ${pct}%, #ddd ${pct}%, #ddd 100%)` }
+}
+
 type Tab = "dashboard" | "sim"
 
 interface SensorAgent {
@@ -279,6 +284,7 @@ Respond with (risks = lessons so far, todos = forward actions): {"assessment":"2
         <div className="mission-retro-scrubber">
           <span className="retro-scrubber-label">Sol 1</span>
           <input type="range" min={1} max={127} value={retroSol} className="retro-scrubber-input"
+            style={trackFill(retroSol, 1, 127)}
             onChange={e => { setRetroSol(+e.target.value); setBriefing(null); setError(null) }} />
           <span className="retro-scrubber-label">Sol 127</span>
           <span className="retro-scrubber-val">Sol {retroSol}</span>
@@ -326,7 +332,6 @@ Respond with (risks = lessons so far, todos = forward actions): {"assessment":"2
                 </div>
                 <div className="mission-ov-harvest-bar-bg">
                   <div className="mission-ov-harvest-bar-fill" style={{ width: `${c.pct}%`, background: c.color + "99" }} />
-                  <span className="mission-ov-harvest-pct" style={{ color: c.color }}>{c.pct}%</span>
                 </div>
               </div>
             ))}
@@ -347,7 +352,7 @@ Respond with (risks = lessons so far, todos = forward actions): {"assessment":"2
             </div>
             <div className="mission-ov-stat">
               <span className="mission-ov-stat-label">Active Crop Cells</span>
-              <span className="mission-ov-stat-val" style={{ color: "#ccc" }}>{displayData.activeCells} / 200</span>
+              <span className="mission-ov-stat-val" style={{ color: "var(--text)" }}>{displayData.activeCells} / 200</span>
             </div>
             {!isRetro && (
               <div className="mission-ov-stat">
@@ -465,10 +470,10 @@ function Dashboard() {
   return (
     <div className="dashboard">
 
-      {/* Mission Overview */}
+      {/* Row 1: Mission Overview */}
       <MissionOverview />
 
-      {/* Live Sensors */}
+      {/* Row 2: Live Sensors */}
       <div className="dash-card full">
         <h3>
           Live Greenhouse Sensors
@@ -490,27 +495,8 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* AI Agent Ã¢â‚¬â€ compact, no sidebar */}
-      <div className="dash-card full agent-compact-card">
-        <h3>AI Greenhouse Agent</h3>
-        <AgentChat />
-      </div>
-
-      {/* Autonomous Decisions */}
-      <div className="dash-card">
-        <h3>Autonomous Decisions</h3>
-        <div className="decision-list">
-          {decisions.map((d, i) => (
-            <div key={i} className={"decision " + d.type}>
-              <div className="decision-text">{d.text}</div>
-              <div className="decision-meta"><span className="decision-service">{d.service}</span><span>{d.time}</span></div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Digital Twin + Crop Intelligence */}
-      <div className="dash-card wide">
+      {/* Row 3: Digital Twin full width */}
+      <div className="dash-card full">
         <h3>
           Digital Twin - Greenhouse Zones
           <span style={{ marginLeft: "auto", fontSize: "0.62rem", color: "#444" }}>click for details</span>
@@ -522,10 +508,6 @@ function Dashboard() {
               <div className="czc-header">
                 <div className="czc-dot" style={{ background: c.color }} />
                 <div className="czc-name">{c.name}</div>
-                <div className="czc-pct" style={{ color: c.color }}>{c.growthPct}%</div>
-              </div>
-              <div className="czc-bar-bg">
-                <div className="czc-bar-fill" style={{ width: c.growthPct + "%", background: c.color }} />
               </div>
               <div className="czc-meta">
                 <span>{c.cycle}</span>
@@ -544,7 +526,36 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Equipment Health */}
+      {/* Row 4: AI Agent full width */}
+      <div className="dash-card full agent-compact-card">
+        <h3>AI Greenhouse Agent</h3>
+        <AgentChat />
+      </div>
+
+      {/* Row 5: Decisions (wide) + Mission Status */}
+      <div className="dash-card wide">
+        <h3>Autonomous Decisions</h3>
+        <div className="decision-list">
+          {decisions.map((d, i) => (
+            <div key={i} className={"decision " + d.type}>
+              <div className="decision-text">{d.text}</div>
+              <div className="decision-meta"><span className="decision-service">{d.service}</span><span>{d.time}</span></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="dash-card">
+        <h3>Mission Status</h3>
+        <div className="mission-status-list">
+          <div className="sensor"><div className="sensor-label">Earth Uplink</div><div className="sensor-value ok">ACTIVE</div></div>
+          <div className="sensor"><div className="sensor-label">Crew Health Score</div><div className="sensor-value ok">94/100</div></div>
+          <div className="sensor"><div className="sensor-label">Quantum Opt. Jobs</div><div className="sensor-value ok">3 queued</div></div>
+          <div className="sensor"><div className="sensor-label">Blockchain Blocks</div><div className="sensor-value ok">1,847</div></div>
+        </div>
+      </div>
+
+      {/* Row 5: Equipment Health + Audit Log + AI Agent */}
       <div className="dash-card">
         <h3>Equipment Health</h3>
         <div className="anomaly-list">
@@ -557,7 +568,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Audit Log */}
       <div className="dash-card">
         <h3>Audit Log</h3>
         <div className="blockchain-list">
@@ -568,17 +578,6 @@ function Dashboard() {
               <span className="block-time">{b.time}</span>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Mission Status */}
-      <div className="dash-card">
-        <h3>Mission Status</h3>
-        <div className="mission-status-list">
-          <div className="sensor"><div className="sensor-label">Earth Uplink</div><div className="sensor-value ok">ACTIVE</div></div>
-          <div className="sensor"><div className="sensor-label">Crew Health Score</div><div className="sensor-value ok">94/100</div></div>
-          <div className="sensor"><div className="sensor-label">Quantum Opt. Jobs</div><div className="sensor-value ok">3 queued</div></div>
-          <div className="sensor"><div className="sensor-label">Blockchain Blocks</div><div className="sensor-value ok">1,847</div></div>
         </div>
       </div>
 
@@ -594,14 +593,14 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-top">
-          <div className="header-logo">M</div>
+          <div className="header-logo">A</div>
           <div className="header-title">
-            <h1>MARS GREENHOUSE CONTROL</h1>
-            <p>Autonomous Agriculture Management System - Mission Sol 127</p>
+            <h1>ARCES System</h1>
+            <p>Autonomous Resource &amp; Crop Environment System — Sol 127 / 450</p>
           </div>
           <div className="header-right">
             <div className="mission-clock"><span>Mission Day</span><strong>127 / 450</strong></div>
-            <div className="aws-pill">Powered by AWS</div>
+            <div className="aws-pill">AWS · Bedrock</div>
           </div>
         </div>
         <nav className="app-nav">

@@ -2,17 +2,30 @@ import { useState, useEffect, useRef, useCallback } from "react"
 
 const AGENT_API = 'http://127.0.0.1:8000'
 
+// Returns an inline background style that fills the track up to the current value
+function trackFill(value: number, min: number, max: number, color = "#a83210"): React.CSSProperties {
+  const pct = ((value - min) / (max - min)) * 100
+  return { background: `linear-gradient(to right, ${color} 0%, ${color} ${pct}%, #ddd ${pct}%, #ddd 100%)` }
+}
+
 interface PlanetConfig {
   name: string; gravity: number; solarFlux: number; dustStorm: number
   radiation: string; waterIce: boolean; tempExt: number; co2Atm: boolean
-  yieldMod: number; waterRecycle: number; custom?: boolean
+  yieldMod: number; waterRecycle: number
 }
 
 const DEFAULT_PLANETS: Record<string, PlanetConfig> = {
-  mars:  { name: "Mars",            gravity: 0.38, solarFlux: 0.43, dustStorm: 0.08, radiation: "high",    waterIce: true,  tempExt: -60,  co2Atm: true,  yieldMod: 0.85, waterRecycle: 88 },
-  moon:  { name: "Moon",            gravity: 0.17, solarFlux: 1.00, dustStorm: 0.02, radiation: "extreme", waterIce: true,  tempExt: -173, co2Atm: false, yieldMod: 0.80, waterRecycle: 92 },
-  titan: { name: "Titan",           gravity: 0.14, solarFlux: 0.01, dustStorm: 0.01, radiation: "low",     waterIce: false, tempExt: -179, co2Atm: false, yieldMod: 0.70, waterRecycle: 95 },
   earth: { name: "Earth (baseline)",gravity: 1.00, solarFlux: 1.00, dustStorm: 0.00, radiation: "low",     waterIce: true,  tempExt: 15,   co2Atm: false, yieldMod: 1.00, waterRecycle: 80 },
+  moon:  { name: "Moon",            gravity: 0.17, solarFlux: 1.00, dustStorm: 0.02, radiation: "extreme", waterIce: true,  tempExt: -173, co2Atm: false, yieldMod: 0.80, waterRecycle: 92 },
+  mars:  { name: "Mars",            gravity: 0.38, solarFlux: 0.43, dustStorm: 0.08, radiation: "high",    waterIce: true,  tempExt: -60,  co2Atm: true,  yieldMod: 0.85, waterRecycle: 88 },
+  pluto: { name: "Pluto",           gravity: 0.06, solarFlux: 0.001,dustStorm: 0.00, radiation: "extreme", waterIce: true,  tempExt: -229, co2Atm: false, yieldMod: 0.45, waterRecycle: 97 },
+}
+
+const PLANET_COLORS: Record<string, string> = {
+  earth: "#2980b9",
+  moon:  "#888888",
+  mars:  "#c0392b",
+  pluto: "#7b68a0",
 }
 
 const CROPS = {
@@ -250,7 +263,7 @@ function LiveCharts({ sim }: { sim: SimState }) {
           <span className="live-chart-badge" style={{ color: kcalColor }}>{kcalPct}% of target</span>
         </div>
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="live-chart-svg">
-          <line x1="0" y1={goalStartY} x2={goalEndX} y2={goalEndY} stroke="#27ae6055" strokeWidth="1.5" strokeDasharray="6 4" />
+          <line x1="0" y1={goalStartY} x2={goalEndX} y2={goalEndY} stroke="rgba(30,122,74,0.33)" strokeWidth="1.5" strokeDasharray="6 4" />
           <polygon points={`0,${H} ${kcalPoints} ${W},${H}`} fill={`${kcalColor}18`} />
           <polyline fill="none" stroke={kcalColor} strokeWidth="2" points={kcalPoints} />
         </svg>
@@ -265,16 +278,16 @@ function LiveCharts({ sim }: { sim: SimState }) {
       <div className="live-chart-card">
         <div className="live-chart-header">
           <span className="live-chart-title">Crop Failure Rate</span>
-          <span className="live-chart-badge" style={{ color: "#c0392b" }}>{lastFail.toFixed(1)}% failing</span>
+          <span className="live-chart-badge" style={{ color: "var(--crit)" }}>{lastFail.toFixed(1)}% failing</span>
         </div>
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="live-chart-svg">
-          <line x1="0" y1={thresholdY} x2={W} y2={thresholdY} stroke="#27ae6044" strokeWidth="1.5" strokeDasharray="6 4" />
-          <polygon points={`0,${H} ${failPoints} ${W},${H}`} fill="#c0392b18" />
+          <line x1="0" y1={thresholdY} x2={W} y2={thresholdY} stroke="rgba(30,122,74,0.27)" strokeWidth="1.5" strokeDasharray="6 4" />
+          <polygon points={`0,${H} ${failPoints} ${W},${H}`} fill="rgba(192,57,43,0.09)" />
           <polyline fill="none" stroke="#c0392b" strokeWidth="2" points={failPoints} />
         </svg>
         <div className="live-chart-legend">
-          <span className="lc-leg-item"><span className="lc-leg-line" style={{ borderTop: "2px dashed #27ae6044", background: "transparent" }} />Healthy (&le;{healthyThreshold}%)</span>
-          <span className="lc-leg-item"><span className="lc-leg-line" style={{ background: "#c0392b" }} />7-day avg</span>
+          <span className="lc-leg-item"><span className="lc-leg-line" style={{ borderTop: "2px dashed rgba(30,122,74,0.4)", background: "transparent" }} />Healthy (&le;{healthyThreshold}%)</span>
+          <span className="lc-leg-item"><span className="lc-leg-line" style={{ background: "var(--crit)" }} />7-day avg</span>
           <span className="lc-leg-right">{lastFail <= healthyThreshold ? "System nominal" : lastFail <= 8 ? "AgentCore replanting" : "High failure — check allocation"}</span>
         </div>
       </div>
@@ -288,8 +301,8 @@ function LiveCharts({ sim }: { sim: SimState }) {
           </span>
         </div>
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="live-chart-svg">
-          <line x1="0" y1={line30Y} x2={W} y2={line30Y} stroke="#27ae6033" strokeWidth="1" strokeDasharray="4 3" />
-          <line x1="0" y1={line7Y} x2={W} y2={line7Y} stroke="#f39c1244" strokeWidth="1" strokeDasharray="4 3" />
+          <line x1="0" y1={line30Y} x2={W} y2={line30Y} stroke="rgba(30,122,74,0.2)" strokeWidth="1" strokeDasharray="4 3" />
+          <line x1="0" y1={line7Y} x2={W} y2={line7Y} stroke="rgba(184,106,0,0.27)" strokeWidth="1" strokeDasharray="4 3" />
           <polygon points={`0,${H} ${pantryPoints} ${W},${H}`} fill={`${pantryColor}18`} />
           <polyline fill="none" stroke={pantryColor} strokeWidth="2" points={pantryPoints} />
         </svg>
@@ -367,29 +380,30 @@ function PlanetVisual({ planetKey }: { planetKey: string }) {
       </g>
     </svg>
   )
-  if (id === "titan") return (
+  if (id === "pluto") return (
     <svg viewBox="0 0 120 120" className="planet-svg" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="titan-grad" cx="38%" cy="35%" r="60%">
-          <stop offset="0%" stopColor="#f0a040" />
-          <stop offset="55%" stopColor="#c07020" />
-          <stop offset="100%" stopColor="#5a2a00" />
+        <radialGradient id="pluto-grad" cx="38%" cy="35%" r="60%">
+          <stop offset="0%" stopColor="#b8a8d0" />
+          <stop offset="50%" stopColor="#7b68a0" />
+          <stop offset="100%" stopColor="#2e1f4a" />
         </radialGradient>
-        <radialGradient id="titan-haze" cx="50%" cy="50%" r="50%">
-          <stop offset="70%" stopColor="transparent" />
-          <stop offset="100%" stopColor="#f0a04055" />
+        <radialGradient id="pluto-atm" cx="50%" cy="50%" r="50%">
+          <stop offset="82%" stopColor="transparent" />
+          <stop offset="100%" stopColor="#b8a8d022" />
         </radialGradient>
-        <clipPath id="titan-clip"><circle cx="60" cy="60" r="46" /></clipPath>
+        <clipPath id="pluto-clip"><circle cx="60" cy="60" r="46" /></clipPath>
       </defs>
-      <circle cx="60" cy="60" r="54" fill="#f0a04022" className="planet-glow-haze" />
-      <circle cx="60" cy="60" r="50" fill="#f0a04011" />
-      <circle cx="60" cy="60" r="46" fill="url(#titan-grad)" />
-      <g clipPath="url(#titan-clip)" className="planet-surface">
-        <ellipse cx="60" cy="55" rx="35" ry="6" fill="#c0702044" />
-        <ellipse cx="60" cy="65" rx="28" ry="4" fill="#a0500033" />
-        <ellipse cx="60" cy="45" rx="20" ry="3" fill="#d0803033" />
+      <circle cx="60" cy="60" r="50" fill="#7b68a011" className="planet-glow" />
+      <circle cx="60" cy="60" r="46" fill="url(#pluto-grad)" />
+      <g clipPath="url(#pluto-clip)" className="planet-surface">
+        <ellipse cx="58" cy="62" rx="22" ry="14" fill="#c8b8e044" transform="rotate(-8 58 62)" />
+        <ellipse cx="42" cy="45" rx="8" ry="5" fill="#55446644" />
+        <ellipse cx="75" cy="70" rx="6" ry="4" fill="#44335533" />
+        <circle cx="60" cy="18" r="7" fill="#e8e0f044" opacity="0.7" />
+        <circle cx="60" cy="102" r="5" fill="#e8e0f033" opacity="0.5" />
       </g>
-      <circle cx="60" cy="60" r="46" fill="url(#titan-haze)" />
+      <circle cx="60" cy="60" r="46" fill="url(#pluto-atm)" />
     </svg>
   )
   if (id === "earth") return (
@@ -485,7 +499,7 @@ function computeRecommendedM2(areaM2: number, yieldMod: number): Record<CropKey,
 }
 
 export default function MissionSim() {
-  const [planets, setPlanets] = useState<Record<string, PlanetConfig>>(DEFAULT_PLANETS)
+  const planets = DEFAULT_PLANETS
   const [planetKey, setPlanetKey] = useState("mars")
   // alloc = % share per crop (independent sliders, don't need to sum to 100)
   const [alloc, setAlloc] = useState<Alloc>({ lettuce: 17, potato: 45, radish: 8, beans: 25, herbs: 5 })
@@ -494,12 +508,6 @@ export default function MissionSim() {
   const [running, setRunning] = useState(false)
   const [speed, setSpeed] = useState(3)
   const [sim, setSim] = useState<SimState | null>(null)
-  const [showCustom, setShowCustom] = useState(false)
-  const [customForm, setCustomForm] = useState<PlanetConfig>({
-    name: "Custom", gravity: 0.5, solarFlux: 0.5, dustStorm: 0.03,
-    radiation: "medium", waterIce: true, tempExt: -40, co2Atm: false,
-    yieldMod: 0.80, waterRecycle: 85, custom: true,
-  })
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [startMode, setStartMode] = useState<"new" | "join" | null>(null)
   const [allocLoading, setAllocLoading] = useState(false)
@@ -711,65 +719,40 @@ export default function MissionSim() {
   })() : null
 
   const verdict = scores
-    ? scores.overall >= 80 ? { text: "Mission Viable", color: "#27ae60" }
-      : scores.overall >= 55 ? { text: "Marginal", color: "#f39c12" }
-      : { text: "Mission at Risk", color: "#c0392b" }
+    ? scores.overall >= 80 ? { text: "Mission Viable",  color: "var(--ok)" }
+      : scores.overall >= 55 ? { text: "Marginal",       color: "var(--warn)" }
+      : { text: "Mission at Risk", color: "var(--crit)" }
     : null
 
   const assessment = scores && sim ? getAssessment(scores, sim.day, p) : null
 
-  function addCustomPlanet() {
-    const key = "custom_" + Date.now()
-    setPlanets(prev => ({ ...prev, [key]: { ...customForm } }))
-    setPlanetKey(key)
-    setSim(null)
-    setShowCustom(false)
-  }
-
   return (
     <div className="sim-view">
-      <div className="sim-config-panel">
+      <div className="sim-config-panel" style={{ '--planet-color': PLANET_COLORS[planetKey] ?? '#a83210' } as React.CSSProperties}>
 
         {/* 1. Planet */}
-        <div className="config-section">
+        <div className="config-section config-section-planet">
           <div className="config-section-title">Planet / Environment</div>
           <div className="config-section-hint">Select the target environment. Each planet changes yield, water recycling, and hazard rates.</div>
           <div className="planet-selector">
             {Object.entries(planets).map(([k, pl]) => (
               <button key={k} className={"planet-btn" + (planetKey === k ? " active" : "")}
                 onClick={() => { setPlanetKey(k); setSim(null); setRunning(false) }}>
-                {pl.name}{pl.custom ? " *" : ""}
+                {pl.name}
               </button>
             ))}
-            <button className="planet-btn add-btn" onClick={() => setShowCustom(s => !s)}>+ Custom</button>
           </div>
-          {showCustom && (
-            <div className="custom-planet-form">
-              <div className="cpf-title">New Planet Configuration</div>
-              <div className="cpf-grid">
-                <label>Name<input value={customForm.name} onChange={e => setCustomForm(f => ({ ...f, name: e.target.value }))} /></label>
-                <label>Gravity (g)<input type="number" step="0.01" value={customForm.gravity} onChange={e => setCustomForm(f => ({ ...f, gravity: +e.target.value }))} /></label>
-                <label>Solar Flux (0-1)<input type="number" step="0.01" value={customForm.solarFlux} onChange={e => setCustomForm(f => ({ ...f, solarFlux: +e.target.value }))} /></label>
-                <label>Dust Storm (%/yr)<input type="number" step="0.01" value={customForm.dustStorm} onChange={e => setCustomForm(f => ({ ...f, dustStorm: +e.target.value }))} /></label>
-                <label>Yield Modifier (0-1)<input type="number" step="0.01" value={customForm.yieldMod} onChange={e => setCustomForm(f => ({ ...f, yieldMod: +e.target.value }))} /></label>
-                <label>Water Recycle (%)<input type="number" step="1" value={customForm.waterRecycle} onChange={e => setCustomForm(f => ({ ...f, waterRecycle: +e.target.value }))} /></label>
-                <label>Ext. Temp (C)<input type="number" step="1" value={customForm.tempExt} onChange={e => setCustomForm(f => ({ ...f, tempExt: +e.target.value }))} /></label>
-                <label>Radiation<input value={customForm.radiation} onChange={e => setCustomForm(f => ({ ...f, radiation: e.target.value }))} /></label>
-              </div>
-              <button className="sim-btn primary" onClick={addCustomPlanet}>Add Planet</button>
-            </div>
-          )}
           <div className="planet-visual-wrap">
             <PlanetVisual planetKey={planetKey} />
           </div>
           <div className="planet-bar">
-            <span className="pbar-item">Gravity <strong>{p.gravity}g</strong></span>
-            <span className="pbar-item">Solar <strong>{(p.solarFlux * 100).toFixed(0)}%</strong></span>
-            <span className="pbar-item">Dust storms <strong>{p.dustStorm > 0 ? (p.dustStorm * 100).toFixed(0) + "%/yr" : "none"}</strong></span>
-            <span className="pbar-item">Radiation <strong>{p.radiation}</strong></span>
-            <span className="pbar-item">Water ice <strong>{p.waterIce ? "yes" : "no"}</strong></span>
-            <span className="pbar-item">Yield mod <strong>{(p.yieldMod * 100).toFixed(0)}%</strong></span>
-            <span className="pbar-item">Recycling <strong>{p.waterRecycle}%</strong></span>
+            <span className="pbar-item">Gravity <strong style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>{p.gravity}g</strong></span>
+            <span className="pbar-item">Solar <strong style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>{(p.solarFlux * 100).toFixed(0)}%</strong></span>
+            <span className="pbar-item">Dust storms <strong style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>{p.dustStorm > 0 ? (p.dustStorm * 100).toFixed(0) + "%/yr" : "none"}</strong></span>
+            <span className="pbar-item">Radiation <strong style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>{p.radiation}</strong></span>
+            <span className="pbar-item">Water ice <strong style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>{p.waterIce ? "yes" : "no"}</strong></span>
+            <span className="pbar-item">Yield mod <strong style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>{(p.yieldMod * 100).toFixed(0)}%</strong></span>
+            <span className="pbar-item">Recycling <strong style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>{p.waterRecycle}%</strong></span>
           </div>
         </div>
 
@@ -782,6 +765,7 @@ export default function MissionSim() {
           <div className="alloc-area-row">
             <span className="alloc-area-label">Total Area</span>
             <input type="range" min={100} max={800} step={10} value={Math.min(areaM2, 800)}
+              style={trackFill(Math.min(areaM2, 800), 100, 800, PLANET_COLORS[planetKey] ?? '#a83210')}
               onChange={e => { setAreaM2(+e.target.value); setSim(null) }} />
             <input
               type="number" min={100} max={800} step={10}
@@ -793,7 +777,7 @@ export default function MissionSim() {
                 setSim(null)
               }}
             />
-            <span className="alloc-area-unit">m²</span>
+            <span className="alloc-area-unit" style={{ fontWeight: 700, fontSize: "0.95rem", background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>m²</span>
           </div>
 
           <div className="alloc-ai-row">
@@ -822,9 +806,14 @@ export default function MissionSim() {
                 <div key={k} className={"alloc-item" + (enabled ? "" : " alloc-disabled")}>
                   <div className="alloc-header">
                     <span className="crop-dot" style={{ background: enabled ? CROPS[k].color : "#333" }} />
-                    <span className="alloc-label" style={{ color: enabled ? "#ccc" : "#444" }}>{CROPS[k].label}</span>
-                    <span className="alloc-val" style={{ color: enabled ? "#888" : "#333" }}>
-                      {enabled ? <>{sharePct}% <span style={{ color: "#444", fontSize: "0.7rem" }}>({m2} m2)</span></> : "disabled"}
+                    <span className="alloc-label" style={{ color: enabled ? "var(--text)" : "var(--text-muted)" }}>{CROPS[k].label}</span>
+                    <span className="alloc-val" style={{ color: enabled ? "var(--text-dim)" : "var(--text-muted)" }}>
+                      {enabled ? (
+                        <>
+                          <span style={{ fontWeight: 700, fontSize: "0.95rem", background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>{sharePct}%</span>
+                          <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", marginLeft: 4 }}>({m2} m²)</span>
+                        </>
+                      ) : "disabled"}
                     </span>
                     <button
                       className={"crop-toggle " + (enabled ? "crop-toggle-on" : "crop-toggle-off")}
@@ -832,7 +821,7 @@ export default function MissionSim() {
                       title={enabled ? "Disable crop" : "Enable crop"}
                     >{enabled ? "ON" : "OFF"}</button>
                   </div>
-                  <div className="alloc-meta" style={{ color: enabled ? "#444" : "#2a2a2a" }}>
+                  <div className="alloc-meta" style={{ color: enabled ? "var(--text-dim)" : "var(--text-muted)" }}>
                     {CROPS[k].cycleDays}d cycle &middot; {CROPS[k].yieldKg}kg/m2 &middot; {CROPS[k].kcal} kcal/100g
                     {recommendedM2 && enabled && (
                       <span className="alloc-rec-hint" title="Recommended area based on REAP agent knowledge">
@@ -841,7 +830,7 @@ export default function MissionSim() {
                     )}
                   </div>
                   <input type="range" min={0} max={100} value={alloc[k]} disabled={!enabled}
-                    style={{ opacity: enabled ? 1 : 0.25 }}
+                    style={{ opacity: enabled ? 1 : 0.25, ...trackFill(alloc[k], 0, 100, CROPS[k].color + "cc") }}
                     onChange={e => { setAlloc(a => ({ ...a, [k]: +e.target.value })); setSim(null) }} />
                 </div>
               )
@@ -871,7 +860,7 @@ export default function MissionSim() {
                 <div className="mc-dash-card mc-dash-storage">
                   <div className="mc-dash-card-title">🗄 SILO — Food Storage</div>
                   <div className="mc-dash-empty">—</div>
-                  <div className="mc-dash-bar-bg"><div className="mc-dash-bar-fill" style={{ width: "0%", background: "#333" }} /></div>
+                  <div className="mc-dash-bar-bg"><div className="mc-dash-bar-fill" style={{ width: "0%", background: "var(--border-lt)" }} /></div>
                   <div className="mc-dash-meta">0% capacity · 0d supply · 0 kcal</div>
                 </div>
                 <div className="mc-dash-card mc-dash-growing">
@@ -1017,8 +1006,8 @@ export default function MissionSim() {
           <div className="ctrl-block">
             <div className="ctrl-block-label">Simulation Speed</div>
             <div className="sim-slider-row">
-              <input type="range" min={1} max={15} value={speed} onChange={e => setSpeed(+e.target.value)} />
-              <span>{speed}x</span>
+              <input type="range" min={1} max={15} value={speed} onChange={e => setSpeed(+e.target.value)} style={trackFill(speed, 1, 15, PLANET_COLORS[planetKey] ?? '#a83210')} />
+              <span style={{ fontWeight: 700, fontSize: "1rem", minWidth: 36, background: "rgba(255,255,255,0.08)", padding: "1px 6px", borderRadius: 4 }}>{speed}x</span>
             </div>
           </div>
           <div className="ctrl-block">
@@ -1041,7 +1030,7 @@ export default function MissionSim() {
           <div className="sim-day-display">
             <span>Sol {sim.day} / {MISSION_DAYS}</span>
             <div className="day-bar-bg"><div className="day-bar-fill" style={{ width: `${(sim.day / MISSION_DAYS) * 100}%` }} /></div>
-            <span style={{ fontSize: "0.7rem", color: "#555" }}>{Math.round(sim.day / MISSION_DAYS * 100)}% complete</span>
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{Math.round(sim.day / MISSION_DAYS * 100)}% complete</span>
           </div>
         )}
       </div>
@@ -1076,14 +1065,14 @@ export default function MissionSim() {
                   <span className="legend-dot" style={{ background: CROPS[k].color }} />{CROPS[k].label}
                 </span>
               ))}
-              <span className="legend-item"><span className="legend-dot" style={{ background: "#1e0808" }} />Failed</span>
+              <span className="legend-item"><span className="legend-dot" style={{ background: "var(--crit)" }} />Failed</span>
             </div>
             {sim.kcalPerDay.length > 2 && (
               <div className="kcal-chart">
                 <div className="kcal-chart-label">kcal / crew member / day (target: 3000)</div>
                 <svg width="100%" height="56" viewBox={`0 0 ${sim.kcalPerDay.length} 56`} preserveAspectRatio="none">
                   <line x1="0" y1={56 - 3000 / 90} x2={sim.kcalPerDay.length} y2={56 - 3000 / 90}
-                    stroke="#27ae60" strokeWidth="0.8" strokeDasharray="4 3" />
+                    stroke="rgba(30,122,74,0.5)" strokeWidth="0.8" strokeDasharray="4 3" />
                   <polyline fill="none" stroke="#c0392b" strokeWidth="1.5"
                     points={sim.kcalPerDay.map((v, i) => `${i},${56 - Math.min(56, v / 90)}`).join(" ")} />
                 </svg>
@@ -1102,10 +1091,10 @@ export default function MissionSim() {
                 <ScoreBar label="Dietary Balance" score={scores.protein} />
                 <ScoreBar label="Water Recycled" score={scores.water} />
                 <div className="stat-grid">
-                  <div className="stat-card"><span>kcal/crew/day</span><strong style={{ color: scores.kcalPerDay >= 3000 ? "#27ae60" : "#c0392b" }}>{scores.kcalPerDay.toLocaleString()}</strong><small>target 3,000</small></div>
-                  <div className="stat-card"><span>protein/crew/day</span><strong style={{ color: scores.proteinPerDay >= 90 ? "#27ae60" : "#c0392b" }}>{scores.proteinPerDay}g</strong><small>target 90g</small></div>
-                  <div className="stat-card"><span>Food reserve</span><strong style={{ color: sim.pantryKcal > CREW * 3000 * 7 ? "#27ae60" : sim.pantryKcal > 0 ? "#f39c12" : "#c0392b" }}>{Math.round(sim.pantryKcal / 1000).toLocaleString()}k kcal</strong><small>{sim.pantryKcal > 0 ? `~${Math.floor(sim.pantryKcal / (CREW * 3000))}d supply` : "empty"}</small></div>
-                  <div className="stat-card"><span>Water recycled</span><strong style={{ color: "#3498db" }}>{Math.round(sim.waterRecycledL).toLocaleString()}L</strong><small>{p.waterRecycle}% efficiency</small></div>
+                  <div className="stat-card"><span>kcal/crew/day</span><strong style={{ color: scores.kcalPerDay >= 3000 ? "var(--ok)" : "var(--crit)" }}>{scores.kcalPerDay.toLocaleString()}</strong><small>target 3,000</small></div>
+                  <div className="stat-card"><span>protein/crew/day</span><strong style={{ color: scores.proteinPerDay >= 90 ? "var(--ok)" : "var(--crit)" }}>{scores.proteinPerDay}g</strong><small>target 90g</small></div>
+                  <div className="stat-card"><span>Food reserve</span><strong style={{ color: sim.pantryKcal > CREW * 3000 * 7 ? "var(--ok)" : sim.pantryKcal > 0 ? "var(--warn)" : "var(--crit)" }}>{Math.round(sim.pantryKcal / 1000).toLocaleString()}k kcal</strong><small>{sim.pantryKcal > 0 ? `~${Math.floor(sim.pantryKcal / (CREW * 3000))}d supply` : "empty"}</small></div>
+                  <div className="stat-card"><span>Water recycled</span><strong style={{ color: "var(--info)" }}>{Math.round(sim.waterRecycledL).toLocaleString()}L</strong><small>{p.waterRecycle}% efficiency</small></div>
                 </div>
                 {/* Calorie & Protein running counters */}
                 <div className="running-counters">
@@ -1116,7 +1105,7 @@ export default function MissionSim() {
                     </div>
                     <div className="counter-avg-row">
                       <span className="counter-avg-label">Avg / crew / day</span>
-                      <span className="counter-avg-val" style={{ color: scores.kcalPerDay >= 3000 ? "#27ae60" : "#c0392b" }}>
+                      <span className="counter-avg-val" style={{ color: scores.kcalPerDay >= 3000 ? "var(--ok)" : "var(--crit)" }}>
                         {scores.kcalPerDay.toLocaleString()} kcal
                       </span>
                       <span className="counter-goal-label">goal: 3,000</span>
@@ -1124,11 +1113,11 @@ export default function MissionSim() {
                     <div className="counter-bar-bg">
                       <div className="counter-bar-fill" style={{
                         width: `${Math.min(100, (scores.kcalPerDay / 3000) * 100)}%`,
-                        background: scores.kcalPerDay >= 3000 ? "#27ae60" : scores.kcalPerDay >= 2000 ? "#f39c12" : "#c0392b"
+                        background: scores.kcalPerDay >= 3000 ? "var(--ok)" : scores.kcalPerDay >= 2000 ? "var(--warn)" : "var(--crit)"
                       }} />
                       <div className="counter-bar-goal" style={{ left: "100%" }} />
                     </div>
-                    <div className="counter-deficit" style={{ color: scores.kcalPerDay >= 3000 ? "#27ae60" : "#c0392b" }}>
+                    <div className="counter-deficit" style={{ color: scores.kcalPerDay >= 3000 ? "var(--ok)" : "var(--crit)" }}>
                       {scores.kcalPerDay >= 3000
                         ? `+${(scores.kcalPerDay - 3000).toLocaleString()} kcal surplus`
                         : `${(3000 - scores.kcalPerDay).toLocaleString()} kcal deficit`}
@@ -1142,7 +1131,7 @@ export default function MissionSim() {
                     </div>
                     <div className="counter-avg-row">
                       <span className="counter-avg-label">Avg / crew / day</span>
-                      <span className="counter-avg-val" style={{ color: scores.proteinPerDay >= 90 ? "#27ae60" : "#c0392b" }}>
+                      <span className="counter-avg-val" style={{ color: scores.proteinPerDay >= 90 ? "var(--ok)" : "var(--crit)" }}>
                         {scores.proteinPerDay}g
                       </span>
                       <span className="counter-goal-label">goal: 90g</span>
@@ -1150,10 +1139,10 @@ export default function MissionSim() {
                     <div className="counter-bar-bg">
                       <div className="counter-bar-fill" style={{
                         width: `${Math.min(100, (scores.proteinPerDay / 90) * 100)}%`,
-                        background: scores.proteinPerDay >= 90 ? "#27ae60" : scores.proteinPerDay >= 60 ? "#f39c12" : "#c0392b"
+                        background: scores.proteinPerDay >= 90 ? "var(--ok)" : scores.proteinPerDay >= 60 ? "var(--warn)" : "var(--crit)"
                       }} />
                     </div>
-                    <div className="counter-deficit" style={{ color: scores.proteinPerDay >= 90 ? "#27ae60" : "#c0392b" }}>
+                    <div className="counter-deficit" style={{ color: scores.proteinPerDay >= 90 ? "var(--ok)" : "var(--crit)" }}>
                       {scores.proteinPerDay >= 90
                         ? `+${(scores.proteinPerDay - 90)}g surplus`
                         : `${(90 - scores.proteinPerDay)}g deficit`}
@@ -1162,17 +1151,7 @@ export default function MissionSim() {
                 </div>
               </>
             )}
-            {assessment && (
-              <div className="ai-assessment">
-                <div className="ai-assessment-title">
-                  <span className="aws-tag aws-tag-sm">Bedrock AgentCore</span> Mission Assessment
-                </div>
-                <p className="ai-assessment-text">{assessment.text}</p>
-                <div className="ai-recs">
-                  {assessment.recs.map((r, i) => <div key={i} className="ai-rec-item">{r}</div>)}
-                </div>
-              </div>
-            )}
+
             <div className="event-log">
               <div className="event-log-title"><span className="aws-tag aws-tag-sm">AgentCore</span> Autonomous Log</div>
               {[...sim.events].reverse().map((e, i) => (

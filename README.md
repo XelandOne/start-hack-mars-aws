@@ -1,11 +1,15 @@
-# 🔴 ACRES
+# 🔴 ACRES – Team: Peak Creative Naming
 ## Autonomous Caloric Reserve & Energy Sustenance System
 
-### Team: **Peak Creative Naming**
+
 
 > AI-powered agriculture management for Mars missions
 
 ACRES is an intelligent greenhouse control system designed for a 450-day Mars surface mission, managing crop production for a crew of 4 astronauts. Built for the START Hack 2026 Syngenta Challenge.
+
+
+<img width="1420" height="778" alt="image" src="https://github.com/user-attachments/assets/3921c71d-251c-4f91-ab6d-b1248b373225" />
+
 
 ## 🎯 The Challenge
 
@@ -129,7 +133,7 @@ npx ampx sandbox
 
 - **Frontend**: React 19, TypeScript, Vite
 - **Backend**: Python (Strands Agents SDK), AWS Amplify Gen 2
-- **AI/ML**: AWS Bedrock AgentCore, Amazon SageMaker
+- **AI/ML Concept**: AWS Bedrock AgentCore, Amazon SageMaker
 - **Infrastructure**: Terraform, Kubernetes (EKS), Docker
 - **Data**: DynamoDB, S3, AWS Managed Blockchain
 - **Monitoring**: AWS Lookout for Equipment, CloudWatch
@@ -149,12 +153,6 @@ mars-greenhouse-control/
 │   ├── auth/              # Cognito setup
 │   ├── data/              # GraphQL schema
 │   └── backend.ts
-├── terraform/             # Infrastructure as Code
-│   └── main.tf            # EKS, VPC, networking
-├── k8s/                   # Kubernetes manifests
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   └── ingress.yaml
 └── .kiro/                 # AI assistant config
     └── settings/mcp.json  # MCP server config
 ```

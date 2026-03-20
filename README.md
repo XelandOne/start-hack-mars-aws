@@ -1,8 +1,11 @@
-# 🔴 Mars Greenhouse Control System – ACRES
+# 🔴 ACRES
+## Autonomous Caloric Reserve & Energy Sustenance System
 
-> Autonomous AI-powered agriculture management for the Red Planet
+### Team: **Peak Creative Naming**
 
-An intelligent greenhouse control system designed for a 450-day Mars surface mission, managing crop production for a crew of 4 astronauts. Built for the START Hack 2026 Syngenta Challenge.
+> AI-powered agriculture management for Mars missions
+
+ACRES is an intelligent greenhouse control system designed for a 450-day Mars surface mission, managing crop production for a crew of 4 astronauts. Built for the START Hack 2026 Syngenta Challenge.
 
 ## 🎯 The Challenge
 

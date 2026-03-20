@@ -1,0 +1,9 @@
+strands-agents
+strands-agents-tools
+boto3
+fastapi
+uvicorn
+python-dotenv
+mcp
+pydantic==2.7.2
+pydantic-core==2.18.2

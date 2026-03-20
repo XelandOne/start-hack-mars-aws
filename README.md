@@ -1,4 +1,4 @@
-# 🔴 Mars Greenhouse Control System
+# 🔴 Mars Greenhouse Control System – ACRES
 
 > Autonomous AI-powered agriculture management for the Red Planet
 
